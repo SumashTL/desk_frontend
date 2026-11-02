@@ -1,6 +1,16 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  modules: ['@nuxtjs/tailwindcss'],
+  alias: {
+    'lucide-vue-next': '@lucide/vue'
+  },
+  modules: [
+    '@nuxtjs/tailwindcss',
+    'shadcn-nuxt'
+  ],
+  shadcn: {
+    prefix: '',
+    componentDir: './app/components/ui'
+  },
   tailwindcss: {
     cssPath: ['~/assets/css/tailwind.css', { injectPosition: 'first' }],
   },
