@@ -6,15 +6,19 @@ export default defineNuxtConfig({
   modules: [
     '@nuxtjs/tailwindcss',
     'shadcn-nuxt',
-    '@sidebase/nuxt-auth'
+    '@sidebase/nuxt-auth',
+    'nuxt-echarts'
   ],
-
   runtimeConfig: {
     public: {
       apiBase: 'http://127.0.0.1:8000/api'
     }
   },
-
+  echarts: {
+    renderer: ['canvas', 'svg'],
+    charts: ['LineChart', 'PieChart'],
+    components: ['GridComponent', 'TooltipComponent', 'LegendComponent']
+  },
   shadcn: {
     prefix: '',
     componentDir: './app/components/ui'
