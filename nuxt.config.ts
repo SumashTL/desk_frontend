@@ -5,8 +5,14 @@ export default defineNuxtConfig({
   },
   modules: [
     '@nuxtjs/tailwindcss',
-    'shadcn-nuxt'
+    'shadcn-nuxt',
+    'nuxt-echarts'
   ],
+  echarts: {
+    renderer: ['canvas', 'svg'],
+    charts: ['LineChart', 'PieChart'],
+    components: ['GridComponent', 'TooltipComponent', 'LegendComponent']
+  },
   shadcn: {
     prefix: '',
     componentDir: './app/components/ui'
