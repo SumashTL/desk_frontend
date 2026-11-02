@@ -103,6 +103,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  customInputClasses: {
+    type: String,
+    default: "",
+  },
 });
 
 const emit = defineEmits(["update:modelValue"]);
@@ -121,13 +125,15 @@ const updateValue = (e) => {
 
 const inputClasses = computed(() => {
   return [
-    "w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150",
-    "focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20",
-    "disabled:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed",
-    props.leftIcon ? "pl-10" : "",
-    "pr-10",
-    props.error ? "border-red-500 focus:border-red-500" : "",
-  ];
+    props.customInputClasses || [
+      "w-full rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none transition-colors duration-150",
+      "focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20",
+      "disabled:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed",
+      props.leftIcon ? "pl-10" : "",
+      "pr-10",
+      props.error ? "border-red-500 focus:border-red-500" : "",
+    ],
+  ].flat();
 });
 
 const autoId = useId();
