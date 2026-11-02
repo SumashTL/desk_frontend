@@ -51,7 +51,7 @@
             @input="errors.password = ''"
             required />
 
-          <div class="flex items-center justify-between text-sm pt-1">
+          <div class="flex items-center justify-between text-sm pt-1 ">
             <label class="flex items-center gap-2 cursor-pointer select-none">
               <input
                 v-model="form.rememberMe"
@@ -62,7 +62,7 @@
 
             <NuxtLink
               to="/forgot-password"
-              class="font-medium text-zinc-700 hover:text-zinc-900 dark:text-zinc-300 dark:hover:text-zinc-100 hover:underline transition-colors">
+              class="font-medium text-primary hover:text-primary-dark hover:underline transition-colors">
               Forgot password?
             </NuxtLink>
           </div>
@@ -70,7 +70,7 @@
           <button
             type="submit"
             :disabled="loading"
-            class="w-full h-11 bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 font-medium text-sm rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer mt-2">
+            class="w-full h-11 bg-primary hover:bg-primary-dark text-white font-medium text-sm rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm shadow-primary/20 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer mt-2">
             <Loader2 v-if="loading" class="w-4 h-4 animate-spin" />
             <span>{{ loading ? "Signing in..." : "Sign In" }}</span>
             <ArrowRight v-if="!loading" class="w-4 h-4 ml-0.5" />
@@ -81,7 +81,7 @@
           Don't have an account?
           <NuxtLink
             to="/register"
-            class="font-semibold text-zinc-900 dark:text-zinc-100 hover:underline ml-1">
+            class="font-semibold text-primary hover:text-primary-dark hover:underline ml-1">
             Create account
           </NuxtLink>
         </p>

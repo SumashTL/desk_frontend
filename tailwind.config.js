@@ -24,27 +24,75 @@ export default {
     },
     extend: {
       colors: {
-        brand: '#FFC107',
+        brand: 'var(--primary-green, #17900D)',
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+
+        // 1. Dashboard & Surface Backgrounds
+        'dashboard-bg': 'var(--dashboard-bg, #F3F4F7)',
+        'sidebar-bg': 'var(--sidebar-bg, #FFFFFF)',
+        'card-surface': 'var(--card-surface, #FEFEFE)',
+        'search-bg': 'var(--search-bg, #F1F3F6)',
+        'subtle-bg': 'var(--subtle-bg, #F9FAFB)',
+
+        // 2. Green Accent Colors
+        'primary-green': 'var(--primary-green, #17900D)',
+        'dark-green': 'var(--dark-green, #005700)',
+        'logo-green': 'var(--logo-bg-green, #007300)',
+        'light-green-border': 'var(--light-green-border, #79BB7A)',
+        'active-nav-bg': 'var(--active-nav-bg, #EAF8E6)',
+        'stat-icon-bg': 'var(--stat-icon-bg, #ECF9E9)',
+        'available-card-bg': 'var(--available-card-bg, #EAF8E6)',
+        'badge-bg': 'var(--badge-bg, #EAF8E6)',
+        'avatar-bg': 'var(--active-nav-bg, #EAF8E6)',
+
         primary: {
-          DEFAULT: 'hsl(var(--primary))',
+          DEFAULT: 'var(--primary-green, #17900D)',
+          dark: 'var(--dark-green, #005700)',
+          logo: 'var(--logo-bg-green, #007300)',
+          border: 'var(--light-green-border, #79BB7A)',
+          active: 'var(--active-nav-bg, #EAF8E6)',
+          light: 'var(--active-nav-bg, #EAF8E6)',
+          stat: 'var(--stat-icon-bg, #ECF9E9)',
+          icon: 'var(--stat-icon-bg, #ECF9E9)',
+          available: 'var(--available-card-bg, #EAF8E6)',
+          chart: 'var(--dark-green, #005700)',
           foreground: 'hsl(var(--primary-foreground))',
+        },
+        green: {
+          DEFAULT: 'var(--primary-green, #17900D)',
+          primary: 'var(--primary-green, #17900D)',
+          dark: 'var(--dark-green, #005700)',
+          logo: 'var(--logo-bg-green, #007300)',
+          border: 'var(--light-green-border, #79BB7A)',
+          active: 'var(--active-nav-bg, #EAF8E6)',
+          light: 'var(--active-nav-bg, #EAF8E6)',
+          stat: 'var(--stat-icon-bg, #ECF9E9)',
+          icon: 'var(--stat-icon-bg, #ECF9E9)',
+          available: 'var(--available-card-bg, #EAF8E6)',
+          chart: 'var(--dark-green, #005700)',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          surface: 'var(--card-surface, #FEFEFE)',
+          foreground: 'hsl(var(--card-foreground))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',
           foreground: 'hsl(var(--secondary-foreground))',
-        },
-        destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
-          foreground: 'hsl(var(--destructive-foreground))',
+          bg: 'var(--subtle-bg, #F9FAFB)',
         },
         muted: {
           DEFAULT: 'hsl(var(--muted))',
           foreground: 'hsl(var(--muted-foreground))',
+          bg: 'var(--search-bg, #F1F3F6)',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
         },
         accent: {
           DEFAULT: 'hsl(var(--accent))',
