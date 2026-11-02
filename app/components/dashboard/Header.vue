@@ -3,12 +3,12 @@
     class="card p-5 md:px-7 md:py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-5 select-none"
   >
     <!-- Left: Title & Date Subtitle -->
-    <div class="shrink-0">
+    <div class="shrink-0 xl:w-[200px]">
       <h1 class="text-2xl sm:text-[26px] font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight leading-tight">
         {{ title }}
       </h1>
       <p class="text-xs font-semibold text-zinc-600 dark:text-zinc-400 mt-1">
-        {{ subtitle }}
+        {{ subtitleText }}
       </p>
     </div>
 
@@ -85,28 +85,11 @@
         />
       </div>
 
-      <!-- Date Range Filter -->
-      <DropdownMenu>
-        <DropdownMenuTrigger as-child>
-          <button
-            type="button"
-            class="h-[42px] px-4 rounded-full border border-zinc-200/80 dark:border-zinc-700 bg-white dark:bg-card-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2 transition-colors cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-green/20"
-          >
-            <Calendar class="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400" />
-            <span>{{ selectedRange }}</span>
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" class="w-36">
-          <DropdownMenuItem
-            v-for="range in dateRangeOptions"
-            :key="range"
-            :class="range === selectedRange ? 'font-bold text-primary-green' : ''"
-            @click="selectedRange = range"
-          >
-            {{ range }}
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      <!-- Date Range Filter Popover -->
+      <DashboardDateRangePicker
+        :model-value="store.range.label"
+        @rangeChange="store.setRange"
+      />
 
       <!-- Notifications Bell -->
       <NuxtLink
@@ -125,23 +108,14 @@
 </template>
 
 <script setup>
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
-import { Bell, Calendar, Search } from '@lucide/vue';
-import { computed, ref } from 'vue';
+import { Bell, Search } from '@lucide/vue'
+import { computed } from 'vue'
+import { useDashboardStore } from '~/stores/dashboard'
 
 const props = defineProps({
   title: {
     type: String,
     default: 'Dashboard'
-  },
-  subtitle: {
-    type: String,
-    default: 'Oct 27 – Nov 2, 2026'
   },
   stats: {
     type: Object,
@@ -151,21 +125,13 @@ const props = defineProps({
     type: String,
     default: ''
   },
-  range: {
-    type: String,
-    default: '7 Days'
-  },
-  dateRangeOptions: {
-    type: Array,
-    default: () => ['Today', '7 Days', '14 Days', '30 Days', 'This Month']
-  },
   hasUnreadNotifications: {
     type: Boolean,
     default: true
   }
 })
 
-const emit = defineEmits(['update:search', 'search', 'update:range', 'rangeChange'])
+const emit = defineEmits(['update:search', 'search'])
 
 const searchQuery = computed({
   get: () => props.search,
@@ -175,18 +141,17 @@ const searchQuery = computed({
   }
 })
 
-const selectedRange = computed({
-  get: () => props.range,
-  set: (val) => {
-    emit('update:range', val)
-    emit('rangeChange', val)
-  }
+const store = useDashboardStore()
+
+const subtitleText = computed(() => {
+  if (store.range.label !== 'Today') return store.range.label
+  return new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
 })
 
 const defaultStats = {
-  conversations: { current: '0', max: '5K', percentage: 0 },
-  channels: { current: '1', max: '1', percentage: 100 },
-  members: { current: '0', max: '5', percentage: 50 }
+  conversations: { current: '6.8K', max: '60K', percentage: 11 },
+  channels: { current: '1', max: '6', percentage: 17 },
+  members: { current: '7', max: '20', percentage: 35 }
 }
 
 const statData = computed(() => {

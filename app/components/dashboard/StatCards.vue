@@ -26,7 +26,7 @@
       </div>
 
       <!-- Bottom Subtitle / Comparison with Dynamic Trend Badge -->
-      <div class="pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-1.5 flex-wrap">
+      <div class="pt-2.5 border-t border-zinc-100 dark:border-zinc-800/80 flex items-center gap-1.5 flex-wrap min-h-[42px]">
         <div v-if="loading" class="h-3.5 w-28 bg-zinc-100 dark:bg-zinc-800/60 rounded animate-pulse" />
         <template v-else>
           <!-- Trend Badge -->
@@ -52,6 +52,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useDashboardStore } from '~/stores/dashboard'
 import {
   MessageSquare,
   BookUser,
@@ -94,6 +95,29 @@ const props = defineProps({
     type: Boolean,
     default: false
   }
+})
+
+const store = useDashboardStore()
+
+// Temporary mock data per preset. Replace with a $fetch call keyed on store.range.
+const MOCK_STATS = {
+  'Today': {
+    conversations: { value: 320, change: 18.2 }, contacts: { value: 210 }, unassigned: { value: 295 },
+    assigned: { value: 25 }, avgFirstResponse: { value: '15m 10s', change: -22.5 }, resolutionRate: { value: '92.5%' }
+  },
+  '7 Days': {
+    conversations: { value: 2148, change: -64.8 }, contacts: { value: 1523 }, unassigned: { value: 2078 },
+    assigned: { value: 70 }, avgFirstResponse: { value: '47m 30s', change: -94.7 }, resolutionRate: { value: '0.0%' }
+  },
+  '30 Days': {
+    conversations: { value: 6840, change: -24.2 }, contacts: { value: 4920 }, unassigned: { value: 6620 },
+    assigned: { value: 220 }, avgFirstResponse: { value: '50m 10s', change: -12.1 }, resolutionRate: { value: '4.5%' }
+  }
+}
+
+const stats = computed(() => {
+  if (Object.keys(props.data || {}).length) return props.data
+  return MOCK_STATS[store.range.preset] || MOCK_STATS['7 Days']
 })
 
 // Centralized badge styles dictionary
@@ -231,7 +255,7 @@ const metrics = computed(() => {
   }
 
   return METRIC_SCHEMAS.map((schema) => {
-    const apiData = props.data?.[schema.id] ?? {}
+    const apiData = stats.value?.[schema.id] ?? {}
     const rawVal = apiData.value ?? schema.defaultValue
     const changeVal = apiData.change !== undefined
       ? apiData.change

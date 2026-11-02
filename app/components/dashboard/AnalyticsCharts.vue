@@ -25,8 +25,13 @@
           </div>
         </div>
 
-        <!-- Filter Pills (Today, 7 Days, 30 Days) -->
-        <div class="inline-flex items-center p-1 rounded-full bg-subtle-bg dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/80 shrink-0 self-start sm:self-auto">
+        <!-- Filter Pills (Today, 7 Days, 30 Days) or Custom Range Badge -->
+        <div v-if="isCustomPeriod" class="shrink-0 self-start sm:self-auto">
+          <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-50/90 dark:bg-zinc-800 text-blue-600 dark:text-blue-400 border border-blue-200/70 dark:border-zinc-700 text-xs font-bold shadow-xs select-none">
+            <span>{{ internalPeriod }}</span>
+          </div>
+        </div>
+        <div v-else class="inline-flex items-center p-1 rounded-full bg-subtle-bg dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/80 shrink-0 self-start sm:self-auto">
           <button
             v-for="p in filterPeriods"
             :key="p"
@@ -112,13 +117,15 @@
             class="p-3.5 rounded-2xl bg-subtle-bg dark:bg-zinc-800/60 border border-zinc-100 dark:border-zinc-700/60 flex items-center justify-between gap-3"
           >
             <div class="flex items-center gap-2.5 min-w-0">
+              <WhatsAppIcon v-if="channel.isWhatsApp" class="w-7 h-7 shrink-0" />
               <div
+                v-else
                 :class="[
                   'w-7 h-7 rounded-full flex items-center justify-center text-white shrink-0',
                   channel.badgeBgClass
                 ]"
               >
-                <component :is="channel.icon" class="w-4 h-4 fill-current" />
+                <component :is="channel.icon" class="w-4 h-4" />
               </div>
               <span class="text-xs font-bold text-zinc-800 dark:text-zinc-200 truncate">
                 {{ channel.name }}
@@ -135,7 +142,8 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { computed } from 'vue'
+import { useDashboardStore } from '~/stores/dashboard'
 import {
   TrendingUp,
   MessageCircle,
@@ -174,7 +182,7 @@ const props = defineProps({
    */
   period: {
     type: String,
-    default: '7 Days'
+    default: 'Today'
   },
   /**
    * Available period buttons
@@ -192,28 +200,20 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['update:period', 'periodChange'])
-
 const filterPeriods = computed(() => props.periods)
-const internalPeriod = ref(props.period || '7 Days')
-
-watch(
-  () => props.period,
-  (newVal) => {
-    if (newVal) internalPeriod.value = newVal
-  }
-)
+const store = useDashboardStore()
+const internalPeriod = computed(() => store.range.label)
+const isCustomPeriod = computed(() => {
+  return !filterPeriods.value.includes(internalPeriod.value)
+})
 
 function setPeriod(newPeriod) {
-  internalPeriod.value = newPeriod
-  emit('update:period', newPeriod)
-  emit('periodChange', newPeriod)
+  store.setRange(newPeriod)
 }
 
 // Icon mapper for popular channels
 function resolveChannelIcon(name = '') {
   const lower = name.toLowerCase()
-  if (lower.includes('whatsapp')) return MessageCircle
   if (lower.includes('telegram')) return Send
   if (lower.includes('mail') || lower.includes('email')) return Mail
   return MessageSquare
@@ -293,6 +293,7 @@ const parsedChannels = computed(() => {
       count,
       percentage: pct,
       color: item.color || '#22C55E',
+      isWhatsApp: (item.name || '').toLowerCase().includes('whatsapp'),
       icon: item.icon || resolveChannelIcon(item.name),
       badgeBgClass: item.badgeBgClass || resolveChannelBadge(item.name)
     }
@@ -353,6 +354,8 @@ const lineChartOption = computed(() => {
   const yMax = maxIncoming > 0 ? Math.max(500, Math.ceil(maxIncoming / 100) * 100) : 500
 
   return {
+    animationDuration: 400,
+    animationDurationUpdate: 300,
     tooltip: {
       trigger: 'axis',
       backgroundColor: 'rgba(255, 255, 255, 0.96)',
@@ -363,11 +366,11 @@ const lineChartOption = computed(() => {
       extraCssText: 'box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06); border-radius: 12px;'
     },
     grid: {
-      left: '3%',
+      left: 36,
       right: '3%',
       top: '12%',
       bottom: '5%',
-      containLabel: true
+      containLabel: false
     },
     xAxis: {
       type: 'category',
