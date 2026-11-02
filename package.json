@@ -12,6 +12,7 @@
   "dependencies": {
     "@lucide/vue": "^1.66.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
+    "@sidebase/nuxt-auth": "^1.4.0",
     "@vueuse/core": "^15.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

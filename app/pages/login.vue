@@ -32,11 +32,11 @@
           Pick up right where you left off - every conversation, every channel.
         </p>
 
-        <form @submit.prevent="handleLogin" class="space-y-4">
+        <form @submit.prevent="handleLogin" class="space-y-4" novalidate>
           <InputForm
             v-model="form.email"
             label="Email"
-            placeholder="ashikurrahmanasif02@gmail.com"
+            placeholder="you@sumashtech.com"
             type="email"
             :left-icon="Mail"
             :error="errors.email"
@@ -83,9 +83,6 @@
         <div>
           Copyright © 2026, All Rights Reserved By <span class="font-bold text-primary-green">Desk</span>
         </div>
-        <NuxtLink to="/privacy-policy" class="hover:text-zinc-600 transition-colors">
-          Privacy Policy
-        </NuxtLink>
       </footer>
     </div>
   </div>
@@ -98,62 +95,110 @@ import { toast } from 'vue-sonner'
 import InputForm from '~/components/form/InputForm.vue'
 import PasswordInputForm from '~/components/form/PasswordInputForm.vue'
 
-useHead({
-  title: 'Sign in to Desk'
+// লগইন করা থাকলে এই পেজে আসতে দেবে না, সরাসরি ড্যাশবোর্ডে পাঠাবে
+definePageMeta({
+  auth: {
+    unauthenticatedOnly: true,
+    navigateAuthenticatedTo: '/dashboard',
+  },
 })
+
+useHead({
+  title: 'Sign in to Desk',
+})
+
+const DEFAULT_REDIRECT = '/dashboard'
+
+const { signIn } = useAuth()
+const route = useRoute()
 
 const loading = ref(false)
 
 const form = reactive({
-  email: '',
-  password: ''
+  email: 'juwelariful1@gmail.com',
+  password: '1111',
 })
 
 const errors = reactive({
   email: '',
-  password: ''
+  password: '',
 })
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 const validate = () => {
-  let isValid = true
   errors.email = ''
   errors.password = ''
 
-  if (!form.email.trim()) {
-    errors.email = 'Email is required'
-    isValid = false
-  }
+  const email = form.email.trim()
+  if (!email) errors.email = 'Email is required'
+  else if (!EMAIL_RE.test(email)) errors.email = 'Enter a valid email address'
 
-  if (!form.password) {
-    errors.password = 'Password is required'
-    isValid = false
-  } else if (form.password.length < 6) {
-    errors.password = 'Password must be at least 6 characters'
-    isValid = false
-  }
+  // লগইনে দৈর্ঘ্য চেক নয়, শুধু খালি কিনা (পাসওয়ার্ডের নিয়ম সার্ভার দেখে)
+  if (!form.password) errors.password = 'Password is required'
 
-  return isValid
+  return !errors.email && !errors.password
 }
 
-const handleLogin = async () => {
-  console.log('Login button clicked. Form data:', {
-    email: form.email,
-    password: form.password
-  })
+// লগইনের আগে যে পেজে যেতে চেয়েছিল সেখানে ফেরত পাঠানো (শুধু নিজের সাইটের পাথ)
+const redirectTarget = () => {
+  const target = route.query.redirect || route.query.callbackUrl
+  return typeof target === 'string' && target.startsWith('/') && !target.startsWith('//')
+    ? target
+    : DEFAULT_REDIRECT
+}
 
-  if (!validate()) {
-    toast.error('Please fix the errors before submitting')
+// Django এর এরর রেসপন্স থেকে মেসেজ বের করা
+const firstMessage = (value) => (Array.isArray(value) ? value[0] : value)
+
+const handleError = (err) => {
+  const status = err?.statusCode ?? err?.response?.status
+  const data = err?.data ?? err?.response?._data ?? {}
+
+  if (!status) {
+    toast.error('Server is not reachable. Please check your connection and try again.')
     return
   }
 
-  loading.value = true
+  if (status === 400) {
+    // ফিল্ড-ভিত্তিক এরর: {"email": ["..."], "password": ["..."]}
+    errors.email = firstMessage(data.email) || ''
+    errors.password = firstMessage(data.password) || ''
+    if (!errors.email && !errors.password) toast.error(firstMessage(data.detail) || 'Please check your details.')
+    return
+  }
 
+  if (status === 401) {
+    // ভুল ইমেইল/পাসওয়ার্ড বা বন্ধ একাউন্ট
+    errors.password = 'Incorrect email or password'
+    toast.error('Incorrect email or password.')
+    return
+  }
+
+  if (status === 429) {
+    toast.error('Too many attempts. Please wait a minute and try again.')
+    return
+  }
+
+  toast.error('Something went wrong. Please try again.')
+}
+
+const handleLogin = async () => {
+  if (loading.value) return
+  if (!validate()) return
+
+  loading.value = true
   try {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    // POST /api/auth/login/ -> টোকেন, তারপর nuxt-auth নিজে GET /api/auth/me/ ডাকে
+    await signIn(
+      { email: form.email.trim().toLowerCase(), password: form.password },
+      { redirect: false },
+    )
     toast.success('Signed in successfully! Welcome back.')
-    // await navigateTo('/dashboard')
+    await navigateTo(redirectTarget(), { replace: true })
   } catch (err) {
-    toast.error('Login failed. Please check your credentials and try again.')
+    form.password = ''
+    handleError(err)
   } finally {
     loading.value = false
   }

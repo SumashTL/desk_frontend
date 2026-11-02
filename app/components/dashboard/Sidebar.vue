@@ -16,11 +16,11 @@
           class="flex items-center gap-2.5 overflow-hidden">
           <div
             class="w-8 h-8 rounded-lg bg-logo-green flex items-center justify-center text-white font-extrabold text-lg shadow-xs shrink-0">
-            Z
+            D
           </div>
           <span
             class="text-[22px] font-extrabold tracking-tight text-zinc-900 truncate">
-            Zurvis
+            Desk
           </span>
         </NuxtLink>
 
@@ -40,7 +40,7 @@
 
       <nav class="space-y-1.5">
         <NuxtLink
-          v-for="item in menuItems"
+          v-for="item in visibleMenuItems"
           :key="item.name"
           :to="item.to"
           :class="[
@@ -94,12 +94,21 @@
             ]">
             <div :class="['flex items-center min-w-0', isCollapsed ? '' : 'gap-3']">
               <div class="relative shrink-0">
+                <img
+                  v-if="user?.avatar"
+                  :src="user.avatar"
+                  :alt="user.name"
+                  :class="[
+                    'object-cover transition-all',
+                    isCollapsed ? 'w-11 h-11 rounded-2xl' : 'w-10 h-10 rounded-full',
+                  ]" />
                 <div
+                  v-else
                   :class="[
                     'bg-avatar-bg flex items-center justify-center text-dark-green font-bold text-sm transition-all',
                     isCollapsed ? 'w-11 h-11 rounded-2xl' : 'w-10 h-10 rounded-full',
                   ]">
-                  AR
+                  {{ initials }}
                 </div>
                 <span
                   class="w-3 h-3 rounded-full bg-primary-green border-2 border-white absolute -bottom-0.5 -right-0.5"></span>
@@ -107,10 +116,10 @@
 
               <div v-if="!isCollapsed" class="min-w-0 text-left">
                 <p class="text-sm font-bold text-zinc-900 truncate leading-tight">
-                  Ashikur R. Asif
+                  {{ user?.name }}
                 </p>
                 <p class="text-xs text-zinc-500 truncate mt-0.5">
-                  ashikur@zurvis.io
+                  {{ user?.email }}
                 </p>
               </div>
             </div>
@@ -126,21 +135,19 @@
           align="start"
           :side-offset="10"
           class="w-56 rounded-2xl border border-zinc-200/80 bg-card p-2 shadow-xl shadow-zinc-200/60">
+          <div class="px-3 pt-1.5 pb-2">
+            <span
+              class="inline-flex items-center px-2 py-0.5 rounded-full bg-active-nav-bg text-primary-green text-[10px] font-extrabold tracking-widest uppercase">
+              {{ user?.role }}
+            </span>
+          </div>
+
           <DropdownMenuItem as-child>
             <NuxtLink
               to="/dashboard/profile"
               class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-zinc-800 transition-colors w-full cursor-pointer">
               <User class="w-4 h-4 text-zinc-600" />
               <span>Profile</span>
-            </NuxtLink>
-          </DropdownMenuItem>
-
-          <DropdownMenuItem as-child>
-            <NuxtLink
-              to="/dashboard/billing"
-              class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-zinc-800 transition-colors w-full cursor-pointer">
-              <CreditCard class="w-4 h-4 text-zinc-600" />
-              <span>Billing</span>
             </NuxtLink>
           </DropdownMenuItem>
 
@@ -156,10 +163,12 @@
           <DropdownMenuSeparator class="my-1.5 bg-zinc-100" />
 
           <DropdownMenuItem
-            @click="handleSignOut"
+            :disabled="signingOut"
+            @select="handleSignOut"
             class="flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-red-500 focus:bg-red-50 focus:text-red-600 cursor-pointer">
-            <LogOut class="w-4 h-4 text-red-500" />
-            <span>Sign out</span>
+            <Loader2 v-if="signingOut" class="w-4 h-4 animate-spin" />
+            <LogOut v-else class="w-4 h-4 text-red-500" />
+            <span>{{ signingOut ? 'Signing out...' : 'Sign out' }}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -172,8 +181,8 @@ import {
   Bell,
   ChevronDown,
   Contact,
-  CreditCard,
   LayoutGrid,
+  Loader2,
   LogOut,
   Megaphone,
   MessageSquareText,
@@ -183,8 +192,7 @@ import {
   User,
   Users,
 } from "@lucide/vue";
-import { ref } from "vue";
-import { toast } from "vue-sonner";
+import { computed, ref } from "vue";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -196,16 +204,34 @@ import {
 const route = useRoute();
 const isCollapsed = ref(false);
 
+// GET /api/auth/me/ থেকে আসা ইউজার (nuxt-auth নিজে আনে)
+const { data: user } = useAuth();
+const { logout, loading: signingOut } = useLogout();
+
+const MANAGE = ["admin", "manager"];
+
+// roles না থাকলে সবাই দেখবে। এটা শুধু মেনু লুকানো; আসল নিষেধ Django সার্ভারে।
 const menuItems = [
   { name: "Dashboard", to: "/dashboard", icon: LayoutGrid },
   { name: "Inbox", to: "/dashboard/inbox", icon: MessageSquareText, badge: 12 },
-  { name: "Channels", to: "/dashboard/channels", icon: Radio },
-  { name: "Members", to: "/dashboard/members", icon: Users },
   { name: "Contacts", to: "/dashboard/contacts", icon: Contact },
-  { name: "Broadcast", to: "/dashboard/broadcast", icon: Megaphone },
-  { name: "Connectors", to: "/dashboard/connectors", icon: Puzzle },
-  { name: "Settings", to: "/dashboard/settings", icon: SlidersHorizontal },
+  { name: "Members", to: "/dashboard/members", icon: Users, roles: MANAGE },
+  { name: "Broadcast", to: "/dashboard/broadcast", icon: Megaphone, roles: MANAGE },
+  { name: "Channels", to: "/dashboard/channels", icon: Radio, roles: ["admin"] },
+  { name: "Connectors", to: "/dashboard/connectors", icon: Puzzle, roles: ["admin"] },
+  { name: "Settings", to: "/dashboard/settings", icon: SlidersHorizontal, roles: MANAGE },
 ];
+
+const visibleMenuItems = computed(() =>
+  menuItems.filter((item) => !item.roles || item.roles.includes(user.value?.role)),
+);
+
+const initials = computed(() => {
+  const name = user.value?.name?.trim() || "";
+  const parts = name.split(/\s+/).filter(Boolean);
+  if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  return name.slice(0, 2).toUpperCase() || "?";
+});
 
 const isActive = (path) => {
   if (path === "/dashboard") {
@@ -214,8 +240,5 @@ const isActive = (path) => {
   return route.path.startsWith(path);
 };
 
-const handleSignOut = async () => {
-  toast.success("Signed out successfully");
-  await navigateTo("/login");
-};
+const handleSignOut = () => logout();
 </script>
