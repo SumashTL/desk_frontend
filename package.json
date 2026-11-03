@@ -10,14 +10,14 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@lucide/vue": "^1.66.0",
+    "@lucide/vue": "^1.67.0",
     "@nuxtjs/tailwindcss": "^6.14.0",
-    "@sidebase/nuxt-auth": "^1.4.0",
     "@pinia/nuxt": "^1.0.3",
+    "@sidebase/nuxt-auth": "^1.4.0",
     "@vueuse/core": "^15.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "cn": "^0.5.1",
+    "cn": "^0.5.2",
     "echarts": "^6.1.0",
     "nuxt": "^4.6.3",
     "nuxt-echarts": "^1.1.0",

@@ -101,9 +101,9 @@ const sizeClasses = computed(() => {
     case 'xs':
       return 'h-6 px-2.5 text-[11px]'
     case 'sm':
-      return 'h-6.5 px-3 text-xs'
+      return 'h-7 px-3 text-xs'
     case 'md':
-      return 'h-8 px-4 text-xs'
+      return 'h-[34px] px-4 text-xs'
     case 'lg':
       return 'h-9 px-5 text-sm'
     case 'default':
