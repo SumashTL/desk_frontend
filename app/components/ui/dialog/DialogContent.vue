@@ -47,7 +47,7 @@ const forwarded = useForwardPropsEmits(delegatedProps, emits);
       v-bind="{ ...$attrs, ...forwarded }"
       :class="
         cn(
-          'bg-white dark:bg-card-surface text-zinc-900 dark:text-zinc-100 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 border border-zinc-200/80 dark:border-zinc-800 shadow-2xl grid max-w-[calc(100%-2rem)] gap-4 rounded-2xl p-6 text-sm duration-150 sm:max-w-lg fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none',
+          'bg-white dark:bg-card-surface text-zinc-900 dark:text-zinc-100 border border-zinc-200/80 dark:border-zinc-800 shadow-2xl grid max-w-[calc(100%-2rem)] gap-4 rounded-2xl p-6 text-sm sm:max-w-lg fixed top-1/2 left-1/2 z-50 w-full -translate-x-1/2 -translate-y-1/2 outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:duration-300 data-[state=closed]:duration-200 data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-left-1/2 data-[state=closed]:slide-out-to-top-[48%] data-[state=open]:slide-in-from-left-1/2 data-[state=open]:slide-in-from-top-[48%]',
           props.class,
         )
       "
