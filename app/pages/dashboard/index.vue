@@ -4,6 +4,8 @@
     <DashboardStatCards />
     <DashboardAnalyticsCharts />
     <DashboardTeamCommandCenter />
+    <DashboardLiveChannelStatus />
+    <DashboardRecentConversations />
   </div>
 </template>
 
@@ -13,6 +15,6 @@ definePageMeta({
 })
 
 useHead({
-  title: 'Dashboard — Zurvis'
+  title: 'Dashboard — Desk'
 })
 </script>
