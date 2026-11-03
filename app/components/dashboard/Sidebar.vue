@@ -1,10 +1,10 @@
 <template>
   <aside
     :class="[
-      'bg-sidebar-bg border-r border-zinc-200/70 min-h-screen flex flex-col justify-between py-6 shrink-0 select-none transition-all duration-300 ease-in-out',
+      'bg-sidebar-bg border-r border-zinc-200/70 sticky top-0 h-screen flex flex-col justify-between py-6 shrink-0 transition-all duration-300 ease-in-out z-30',
       isCollapsed ? 'w-20 px-3' : 'w-64 px-4',
     ]">
-    <div>
+    <div class="flex-1 overflow-y-auto min-h-0 overflow-x-hidden">
       <div
         :class="[
           'flex items-center mb-8',
@@ -83,7 +83,7 @@
       </nav>
     </div>
 
-    <div class="pt-6 border-t border-zinc-100">
+    <div class="pt-4 border-t border-zinc-100 shrink-0">
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <button

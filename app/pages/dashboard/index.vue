@@ -3,6 +3,7 @@
     <DashboardHeader />
     <DashboardStatCards />
     <DashboardAnalyticsCharts />
+    <DashboardTeamCommandCenter />
   </div>
 </template>
 

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="min-h-screen flex p-4 sm:p-5 gap-6 relative overflow-hidden select-none bg-[#F5F7FA]"
+    class="min-h-screen flex p-4 sm:p-5 gap-6 relative overflow-hidden bg-[#F5F7FA]"
     style="background-image: radial-gradient(circle at 82% 14%, #FDF8EE 0%, transparent 38%);"
   >
     <!-- Left Banner (Shared between Login & Forgot Password) -->

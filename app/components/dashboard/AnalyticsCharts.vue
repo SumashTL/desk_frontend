@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5 select-none">
+  <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
     <!-- 1. Left Card: Conversation Volume (8 cols on XL) -->
     <div class="card xl:col-span-8 flex flex-col justify-between">
       <!-- Card Header -->
@@ -27,27 +27,18 @@
 
         <!-- Filter Pills (Today, 7 Days, 30 Days) or Custom Range Badge -->
         <div v-if="isCustomPeriod" class="shrink-0 self-start sm:self-auto">
-          <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-50/90 dark:bg-zinc-800 text-blue-600 dark:text-blue-400 border border-blue-200/70 dark:border-zinc-700 text-xs font-bold shadow-xs select-none">
+          <div class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-blue-50/90 dark:bg-zinc-800 text-blue-600 dark:text-blue-400 border border-blue-200/70 dark:border-zinc-700 text-xs font-bold shadow-xs">
             <span>{{ internalPeriod }}</span>
           </div>
         </div>
-        <div v-else class="inline-flex items-center p-1 rounded-full bg-subtle-bg dark:bg-zinc-800/80 border border-zinc-200/80 dark:border-zinc-700/80 shrink-0 self-start sm:self-auto">
-          <button
-            v-for="p in filterPeriods"
-            :key="p"
-            type="button"
-            :disabled="loading"
-            :class="[
-              'w-16 sm:w-[72px] h-7 flex items-center justify-center text-xs font-semibold rounded-full transition-all duration-150 cursor-pointer outline-none select-none disabled:opacity-50 disabled:cursor-not-allowed',
-              internalPeriod === p
-                ? 'bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 shadow-xs border border-zinc-200/70 dark:border-zinc-700'
-                : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 border border-transparent'
-            ]"
-            @click="setPeriod(p)"
-          >
-            {{ p }}
-          </button>
-        </div>
+        <PillTabs
+          v-else
+          :model-value="internalPeriod"
+          :items="filterPeriods"
+          :disabled="loading"
+          class="self-start sm:self-auto"
+          @update:model-value="setPeriod"
+        />
       </div>
 
       <!-- Line Chart Container -->
@@ -142,15 +133,16 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { useDashboardStore } from '~/stores/dashboard'
 import {
-  TrendingUp,
-  MessageCircle,
-  MessageSquare,
   Mail,
-  Send
-} from '@lucide/vue'
+  MessageSquare,
+  Send,
+  TrendingUp
+} from '@lucide/vue';
+import { computed } from 'vue';
+import PillTabs from '~/components/PillTabs.vue';
+import { useDashboardStore } from '~/stores/dashboard';
+import WhatsAppIcon from '../icons/WhatsAppIcon.vue';
 
 const props = defineProps({
   /**

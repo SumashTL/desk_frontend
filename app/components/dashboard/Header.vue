@@ -1,6 +1,6 @@
 <template>
   <header
-    class="card p-5 md:px-7 md:py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-5 select-none"
+    class="card p-5 md:px-7 md:py-4 flex flex-col xl:flex-row xl:items-center justify-between gap-5"
   >
     <!-- Left: Title & Date Subtitle -->
     <div class="shrink-0 xl:w-[200px]">

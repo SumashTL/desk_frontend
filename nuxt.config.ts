@@ -18,7 +18,7 @@ export default defineNuxtConfig({
   },
   echarts: {
     renderer: ["canvas", "svg"],
-    charts: ["LineChart", "PieChart"],
+    charts: ["LineChart", "PieChart", "BarChart"],
     components: ["GridComponent", "TooltipComponent", "LegendComponent"],
   },
   shadcn: {
