@@ -5,20 +5,20 @@
       type="button"
       @click="toggleOpen"
       :class="[
-        'h-[42px] w-[190px] sm:w-[210px] shrink-0 px-3.5 sm:px-4 rounded-full border border-zinc-200/80 dark:border-zinc-700 bg-white dark:bg-card-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center gap-2 transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-green/20 select-none',
+        'h-[42px] w-[190px] sm:w-[210px] shrink-0 px-3.5 sm:px-4 rounded-full border border-zinc-200/80 dark:border-zinc-700 bg-white dark:bg-card-surface hover:bg-zinc-50 dark:hover:bg-zinc-800/80 text-xs font-bold text-zinc-800 dark:text-zinc-200 flex items-center justify-center gap-2 transition-all cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-primary-green/20 select-none relative',
         isOpen ? 'ring-2 ring-primary-green/20 border-primary-green' : ''
       ]"
       aria-haspopup="dialog"
       :aria-expanded="isOpen"
     >
       <Calendar class="w-3.5 h-3.5 text-zinc-600 dark:text-zinc-400 shrink-0" />
-      <span class="flex-1 text-left truncate">{{ displayLabel }}</span>
+      <span class="truncate text-center">{{ displayLabel }}</span>
 
       <!-- Quick reset 'x' icon matching the screenshot -->
       <span
         v-if="canReset"
         @click.stop="handleQuickReset"
-        class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-zinc-200/70 dark:hover:bg-zinc-700 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors ml-0.5"
+        class="absolute right-3 w-4 h-4 rounded-full flex items-center justify-center hover:bg-zinc-200/70 dark:hover:bg-zinc-700 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
         title="Reset date filter"
       >
         <X class="w-3 h-3 stroke-[2.5]" />

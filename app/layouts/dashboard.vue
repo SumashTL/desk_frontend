@@ -2,7 +2,7 @@
   <div class="flex min-h-screen bg-dashboard-bg text-zinc-900">
     <DashboardSidebar />
 
-    <main class="flex-1 min-w-0 px-6 py-4 md:px-8">
+    <main class="flex-1 min-w-0 px-6 py-4 md:px-5">
       <slot />
     </main>
   </div>
