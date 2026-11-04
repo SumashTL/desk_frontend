@@ -1,21 +1,7 @@
-<template>
-  <div class="space-y-6">
-    <MembersHeader />
-    <MembersStatCards />
-    <MembersTable />
-  </div>
-</template>
-
-<script setup>
-import MembersHeader from '~/components/members/MembersHeader.vue'
-import MembersStatCards from '~/components/members/MembersStatCards.vue'
-import MembersTable from '~/components/members/MembersTable.vue'
-
-definePageMeta({
-  layout: 'dashboard',
-})
-
-useHead({
-  title: 'Members — Desk',
-})
+<template><DataManager title="Team members" description="Manage your support team, roles, availability and conversation workload." storage-key="team-members" action-label="Invite member" :columns="['Member','Email','Role','Availability','Status','Assigned conversations','Resolved this month']" :initial-rows="rows" :stats="stats" :filters="['Admin','Manager','Agent','Online','Offline','Active','Inactive']" search-placeholder="Search name, email or role..."/></template>
+<script setup lang="ts">
+import DataManager from '~/components/workspace/DataManager.vue'
+definePageMeta({layout:'dashboard'});useHead({title:'Team Members — SumashDesk'})
+const stats=[{label:'Total members',value:'8'},{label:'Online now',value:'5'},{label:'Pending invites',value:'2'},{label:'Open assignments',value:'86'}]
+const rows=[{id:'u1',Member:'Sadikul Islam',Email:'sadikul@sumashdesk.com',Role:'Admin',Availability:'Online',Status:'Active','Assigned conversations':'18','Resolved this month':'42'},{id:'u2',Member:'Nusrat Jahan',Email:'nusrat@sumashdesk.com',Role:'Manager',Availability:'Online',Status:'Active','Assigned conversations':'24','Resolved this month':'86'},{id:'u3',Member:'Mahmud Hasan',Email:'mahmud@sumashdesk.com',Role:'Agent',Availability:'Busy',Status:'Active','Assigned conversations':'16','Resolved this month':'71'},{id:'u4',Member:'Rafi Ahmed',Email:'rafi@sumashdesk.com',Role:'Agent',Availability:'Offline',Status:'Active','Assigned conversations':'9','Resolved this month':'54'},{id:'u5',Member:'Sadia Rahman',Email:'sadia@sumashdesk.com',Role:'Agent',Availability:'Online',Status:'Active','Assigned conversations':'12','Resolved this month':'63'}]
 </script>

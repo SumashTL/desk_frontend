@@ -1,14 +1,7 @@
-<template>
-  <DashboardUnderConstruction title="Broadcast" />
-</template>
-
-<script setup>
-definePageMeta({
-  layout: 'dashboard'
-})
-
-useHead({
-  title: 'Broadcast — Zurvis'
-})
+<template><DataManager title="Broadcast campaigns" description="Create, schedule and review approved-template campaigns for opted-in customers." storage-key="campaigns" action-label="Create campaign" :columns="['Campaign','Template','Audience','Recipients','Schedule','Status','Delivered','Read','Failed']" :initial-rows="rows" :stats="stats" :filters="['Draft','Scheduled','Completed','Paused']" search-placeholder="Search campaigns..."/></template>
+<script setup lang="ts">
+import DataManager from '~/components/workspace/DataManager.vue'
+definePageMeta({layout:'dashboard'});useHead({title:'Broadcast — SumashDesk'})
+const stats=[{label:'Total campaigns',value:'28'},{label:'Scheduled',value:'3'},{label:'Messages delivered',value:'12.4k'},{label:'Average read rate',value:'71.8%'}]
+const rows=[{id:'b1',Campaign:'November product update',Template:'product_update',Audience:'All opted-in contacts',Recipients:'1,240',Schedule:'Nov 06, 2026 · 10:00 AM',Status:'Scheduled',Delivered:'—',Read:'—',Failed:'—'},{id:'b2',Campaign:'October customer care',Template:'welcome_customer',Audience:'VIP Customers',Recipients:'860',Schedule:'Oct 28, 2026 · 11:00 AM',Status:'Completed',Delivered:'842',Read:'611',Failed:'18'},{id:'b3',Campaign:'New arrivals',Template:'new_arrivals',Audience:'Interested Leads',Recipients:'2,100',Schedule:'Not scheduled',Status:'Draft',Delivered:'—',Read:'—',Failed:'—'},{id:'b4',Campaign:'Service announcement',Template:'service_update',Audience:'All opted-in contacts',Recipients:'1,540',Schedule:'Oct 18, 2026 · 02:00 PM',Status:'Completed',Delivered:'1,502',Read:'1,081',Failed:'38'}]
 </script>
-

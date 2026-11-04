@@ -13,7 +13,9 @@ export default defineNuxtConfig({
   ],
   runtimeConfig: {
     public: {
-      apiBase: "http://127.0.0.1:8000/api",
+      appName: process.env.NUXT_PUBLIC_APP_NAME || "SumashDesk",
+      demoMode: process.env.NUXT_PUBLIC_DEMO_MODE !== "false",
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:8000/api/v1",
     },
   },
   echarts: {
@@ -41,8 +43,8 @@ export default defineNuxtConfig({
 
   auth: {
     isEnabled: true,
-    baseURL: "http://127.0.0.1:8000/api",
-    globalAppMiddleware: true,
+    baseURL: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:8000/api/v1",
+    globalAppMiddleware: false, // Keep the mock-data frontend accessible before backend integration.
 
     provider: {
       type: "local",

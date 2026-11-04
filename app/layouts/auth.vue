@@ -11,7 +11,7 @@
       <div class="relative z-10 flex flex-col items-center justify-center">
         <img
           src="/login-img.webp"
-          alt="Desk"
+          alt="SumashDesk"
           class="w-full max-w-[330px] xl:max-w-[370px] object-contain pointer-events-none select-none drop-shadow-[0_28px_26px_rgba(0,0,0,0.12)]"
         />
       </div>
@@ -25,7 +25,7 @@
 
       <footer class="w-full flex flex-col sm:flex-row items-center justify-between text-[11px] text-zinc-400 pt-4 gap-2">
         <div>
-          Copyright © 2026, All Rights Reserved By <span class="font-bold text-primary-green">Desk</span>
+          Copyright © 2026, All Rights Reserved By <span class="font-bold text-primary-green">SumashDesk</span>
         </div>
       </footer>
     </div>

@@ -1,14 +1,7 @@
-<template>
-  <DashboardUnderConstruction title="Contacts" />
-</template>
-
-<script setup>
-definePageMeta({
-  layout: 'dashboard'
-})
-
-useHead({
-  title: 'Contacts — Zurvis'
-})
+<template><DataManager title="Contacts" description="Your customer directory, groups, consent and conversation context in one place." storage-key="contacts" action-label="Add contact" :columns="['Customer','Phone','Email','Tags','Group','Last interaction','Conversations','Opt-in','Status']" :initial-rows="rows" :stats="stats" :filters="['Active','Inactive','VIP','Lead']" search-placeholder="Search name, phone, email or tag..." import-export/></template>
+<script setup lang="ts">
+import DataManager from '~/components/workspace/DataManager.vue'
+definePageMeta({layout:'dashboard'});useHead({title:'Contacts — SumashDesk'})
+const stats=[{label:'Total contacts',value:'2,486',note:'+8.2% this month'},{label:'New this month',value:'184'},{label:'Marketing opt-in',value:'2,201',note:'88.5% of contacts'},{label:'Follow-ups due',value:'16',note:'Needs attention'}]
+const rows=[{id:'c1',Customer:'Sumon Kundu',Phone:'+8801714932410',Email:'sumon@example.com',Tags:'VIP, Lead',Group:'VIP Customers','Last interaction':'Today, 12:10 PM',Conversations:'12','Opt-in':'Yes',Status:'Active'},{id:'c2',Customer:'Shalvi Hasan',Phone:'+8801812450821',Email:'shalvi@example.com',Tags:'Follow-up',Group:'Interested Leads','Last interaction':'Today, 12:04 PM',Conversations:'3','Opt-in':'Yes',Status:'Lead'},{id:'c3',Customer:'Mahbub Rahman',Phone:'+8801911220345',Email:'mahbub@example.com',Tags:'New',Group:'New Customers','Last interaction':'Today, 11:52 AM',Conversations:'1','Opt-in':'Yes',Status:'Active'},{id:'c4',Customer:'Diba Akter',Phone:'+8801610334455',Email:'diba@example.com',Tags:'Complaint',Group:'Support Follow-up','Last interaction':'Today, 11:30 AM',Conversations:'4','Opt-in':'No',Status:'Inactive'},{id:'c5',Customer:'Abdul Latif',Phone:'+8801712667788',Email:'latif@example.com',Tags:'Interested',Group:'Interested Leads','Last interaction':'Yesterday',Conversations:'2','Opt-in':'Yes',Status:'Active'},{id:'c6',Customer:'Nusrat Jahan',Phone:'+8801611223344',Email:'nusrat@example.com',Tags:'VIP',Group:'VIP Customers','Last interaction':'Nov 03, 2026',Conversations:'7','Opt-in':'Yes',Status:'Active'}]
 </script>
-

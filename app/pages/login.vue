@@ -5,12 +5,16 @@
     </div>
 
     <h1 class="text-2xl sm:text-[30px] font-extrabold tracking-tight text-zinc-900 leading-tight mb-2">
-      Sign in to <span class="text-primary-green">Desk</span>
+      Sign in to <span class="text-primary-green">SumashDesk</span>
     </h1>
 
-    <p class="text-xs sm:text-sm text-zinc-500 leading-relaxed mb-7">
-      Pick up right where you left off - every conversation, every channel.
+    <p class="text-xs sm:text-sm text-zinc-500 leading-relaxed mb-3">
+      Pick up right where you left off - every conversation, every customer.
     </p>
+    <p v-if="config.public.demoMode" class="mb-6 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-[11px] leading-5 text-emerald-800">
+      Demo mode is enabled. Use any valid email address and any non-empty password; no credentials are sent to a server.
+    </p>
+    <div v-else class="mb-6" />
 
     <form @submit.prevent="handleLogin" class="space-y-4" novalidate>
       <InputForm
@@ -83,13 +87,14 @@ useHead({
 const DEFAULT_REDIRECT = '/dashboard'
 
 const { signIn } = useAuth()
+const config = useRuntimeConfig()
 const route = useRoute()
 
 const loading = ref(false)
 
 const form = reactive({
-  email: 'juwelariful1@gmail.com',
-  password: '1111',
+  email: '',
+  password: '',
 })
 
 const errors = reactive({
@@ -162,12 +167,24 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    // POST /api/auth/login/ -> টোকেন, তারপর nuxt-auth নিজে GET /api/auth/me/ ডাকে
-    await signIn(
-      { email: form.email.trim().toLowerCase(), password: form.password },
-      { redirect: false },
-    )
-    toast.success('Signed in successfully! Welcome back.')
+    if (config.public.demoMode) {
+      // Frontend-only demo session; no credentials are sent to a server.
+      const session = {
+        email: form.email.trim().toLowerCase(),
+        name: form.email.trim().split('@')[0] || 'Demo User',
+        role: 'Admin',
+        signedInAt: new Date().toISOString(),
+      }
+      if (import.meta.client) localStorage.setItem('desk-demo-session', JSON.stringify(session))
+      toast.success('Demo session started. Welcome!')
+    } else {
+      // Django DRF authentication is used when demo mode is disabled.
+      await signIn(
+        { email: form.email.trim().toLowerCase(), password: form.password },
+        { redirect: false },
+      )
+      toast.success('Signed in successfully! Welcome back.')
+    }
     await navigateTo(redirectTarget(), { replace: true })
   } catch (err) {
     form.password = ''
