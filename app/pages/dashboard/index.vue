@@ -1,14 +1,118 @@
 <template>
- <div class="min-h-screen p-5 md:p-7"><div class="mb-6 flex flex-wrap items-center justify-between gap-3"><div><p class="text-[10px] font-bold uppercase tracking-[.16em] text-blue-600">Business overview</p><h1 class="mt-1 text-2xl font-bold tracking-tight">Dashboard</h1><p class="mt-1 text-sm text-slate-500">A quick view of your WhatsApp customer support operations.</p></div><div class="rounded-lg border border-slate-200 bg-white px-3 py-2 text-[11px] text-slate-500">Wednesday, November 4, 2026</div></div>
- <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><div v-for="s in stats" :key="s.label" class="rounded-xl border border-slate-200 bg-white p-4"><div class="flex items-center justify-between"><span class="text-[11px] font-medium text-slate-500">{{s.label}}</span><span class="rounded-lg bg-blue-50 p-2 text-blue-600"><component :is="s.icon" class="h-4 w-4"/></span></div><div class="mt-3 flex items-end justify-between"><b class="text-2xl tracking-tight">{{s.value}}</b><span class="text-[10px] font-semibold text-emerald-600">{{s.change}}</span></div></div></div>
- <div class="mt-5 grid gap-4 xl:grid-cols-[1.5fr_1fr]"><section class="rounded-xl border border-slate-200 bg-white p-5"><div class="flex items-center justify-between"><div><h2 class="text-sm font-bold">Message activity</h2><p class="mt-1 text-[11px] text-slate-500">Incoming and outgoing messages this week</p></div><span class="rounded-md bg-slate-50 px-2 py-1 text-[10px] text-slate-500">Last 7 days</span></div><div class="mt-6 flex h-48 items-end justify-around gap-4"><div v-for="(v,i) in bars" :key="i" class="flex h-full flex-1 items-end justify-center gap-1"><div class="w-4 rounded-t-md bg-blue-500" :style="{height:v+'%'}"></div><div class="w-4 rounded-t-md bg-emerald-400" :style="{height:(v*.68)+'%'}"></div></div></div><div class="mt-3 flex justify-center gap-5 text-[10px] text-slate-500"><span class="flex items-center gap-1.5"><i class="h-2 w-2 rounded-full bg-blue-500"></i>Incoming</span><span class="flex items-center gap-1.5"><i class="h-2 w-2 rounded-full bg-emerald-400"></i>Outgoing</span></div></section>
- <section class="rounded-xl border border-slate-200 bg-white p-5"><div class="flex items-center justify-between"><div><h2 class="text-sm font-bold">Team availability</h2><p class="mt-1 text-[11px] text-slate-500">Current agent status</p></div><NuxtLink to="/dashboard/members" class="text-[10px] font-semibold text-blue-600">View team</NuxtLink></div><div class="mt-4 space-y-4"><div v-for="a in team" :key="a.name" class="flex items-center gap-3"><span :class="['grid h-9 w-9 place-items-center rounded-full text-[10px] font-bold',a.color]">{{a.initials}}</span><div class="min-w-0 flex-1"><p class="text-xs font-semibold">{{a.name}}</p><p class="text-[10px] text-slate-400">{{a.role}}</p></div><span class="flex items-center gap-1.5 text-[10px] text-slate-500"><i :class="['h-2 w-2 rounded-full',a.status==='Online'?'bg-emerald-500':a.status==='Busy'?'bg-amber-400':'bg-slate-300']"></i>{{a.status}}</span></div></div></section></div>
- <div class="mt-5 grid gap-4 xl:grid-cols-2"><section class="rounded-xl border border-slate-200 bg-white p-5"><div class="flex items-center justify-between"><h2 class="text-sm font-bold">Recent conversations</h2><NuxtLink to="/dashboard/inbox" class="text-[10px] font-semibold text-blue-600">Open inbox</NuxtLink></div><div class="mt-3 divide-y divide-slate-100"><div v-for="c in recent" :key="c.name" class="flex items-center gap-3 py-3"><span :class="['grid h-9 w-9 place-items-center rounded-full text-[10px] font-bold',c.color]">{{c.initials}}</span><div class="min-w-0 flex-1"><p class="text-xs font-semibold">{{c.name}}</p><p class="truncate text-[10px] text-slate-500">{{c.message}}</p></div><span class="text-[10px] text-slate-400">{{c.time}}</span></div></div></section><section class="rounded-xl border border-slate-200 bg-white p-5"><div class="flex items-center justify-between"><h2 class="text-sm font-bold">Follow-up reminders</h2><span class="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-semibold text-amber-700">3 due</span></div><div class="mt-3 space-y-3"><div v-for="r in reminders" :key="r.name" class="flex items-start gap-3 rounded-lg bg-slate-50 p-3"><span class="rounded-lg bg-white p-2 text-blue-600"><CalendarClock class="h-4 w-4"/></span><div class="min-w-0 flex-1"><p class="text-xs font-semibold">{{r.name}}</p><p class="mt-0.5 text-[10px] text-slate-500">{{r.note}}</p></div><span class="whitespace-nowrap text-[10px] font-semibold text-amber-600">{{r.when}}</span></div></div></section></div>
- </div>
+  <div class="sd-page"><div class="sd-page-inner">
+    <SdPageHeader :title="`${greeting}, ${firstName}`" :subtitle="data?.is_team_view ? 'Here is how the whole team is doing today.' : 'Here is your day at a glance.'">
+      <SdButton :icon="RefreshCw" :loading="loading" @click="load">Refresh</SdButton>
+      <SdButton variant="primary" :icon="MessagesSquare" to="/dashboard/inbox">Open inbox</SdButton>
+    </SdPageHeader>
+
+    <SdErrorState v-if="error && !data" :message="error" @retry="load" />
+    <template v-else>
+      <div v-if="conn && (!conn.configured || conn.dry_run)" class="mb-4 flex items-start gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-[13px]">
+        <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+        <div><p class="font-semibold">{{ !conn.configured ? 'WhatsApp is not connected yet' : 'Test mode: messages are not sent to WhatsApp' }}</p>
+          <p class="mt-0.5 text-[var(--sd-muted)]">{{ !conn.configured ? 'Add the WhatsApp Cloud API credentials to the server .env file.' : 'WA_DRY_RUN is on in the server .env. Replies are saved but not delivered. Turn it off to go live.' }}</p></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <SdStat label="Open chats" :value="num(c.open)" :hint="`${num(c.pending)} pending`" :icon="MessagesSquare" :loading="loading && !data" />
+        <SdStat label="Waiting for reply" :value="num(c.awaiting_reply)" :hint="`${num(c.unread)} unread`" :icon="Hourglass" tone="amber" :loading="loading && !data" />
+        <SdStat :label="data?.is_team_view ? 'Unassigned' : 'Assigned to me'" :value="num(data?.is_team_view ? c.unassigned : c.mine)" :hint="data?.is_team_view ? 'in the queue' : `${num(c.unassigned)} in the queue`" :icon="data?.is_team_view ? Inbox : UserRound" tone="blue" :loading="loading && !data" />
+        <SdStat label="Resolved today" :value="num(c.resolved_today)" :hint="`${num(c.active_today)} chats active today`" :icon="CheckCircle2" tone="violet" :loading="loading && !data" />
+        <SdStat label="Messages today" :value="num((m.incoming || 0) + (m.outgoing || 0))" :hint="`${num(m.incoming)} in · ${num(m.outgoing)} out${m.failed ? ` · ${m.failed} failed` : ''}`" :icon="MessageSquareText" :loading="loading && !data" />
+        <SdStat label="Avg. first response (7d)" :value="duration(data?.avg_first_response_seconds_7d)" :icon="Timer" tone="blue" :loading="loading && !data" />
+        <SdStat label="CSAT (30d)" :value="data?.csat_30d?.csat_percent != null ? `${data.csat_30d.csat_percent}%` : '—'" :hint="data?.csat_30d?.responses ? `${data.csat_30d.average} avg · ${data.csat_30d.responses} ratings` : 'No ratings yet'" :icon="HeartHandshake" tone="green" :loading="loading && !data" />
+        <SdStat label="Follow-ups" :value="num(data?.followups?.due_today)" :hint="data?.followups?.overdue ? `${data.followups.overdue} overdue` : 'due today'" :icon="CalendarClock" :tone="data?.followups?.overdue ? 'red' : 'gray'" :loading="loading && !data" />
+      </div>
+
+      <div class="mt-4 grid gap-4 xl:grid-cols-[1.6fr_1fr]">
+        <div class="sd-card p-5">
+          <div class="mb-2 flex items-center justify-between"><h2 class="text-[14px] font-bold">Messages · last 7 days</h2></div>
+          <SdChart v-if="trend.length" :labels="trend.map(t => t.label)" :series="[{ name: 'Incoming', data: trend.map(t => t.values.incoming), type: 'bar' }, { name: 'Outgoing', data: trend.map(t => t.values.outgoing), type: 'bar', color: '#7fc49a' }]" />
+        </div>
+        <div class="sd-card flex flex-col p-5">
+          <h2 class="mb-3 text-[14px] font-bold">WhatsApp connection</h2>
+          <div v-if="conn" class="space-y-3 text-[13px]">
+            <div class="flex items-center gap-3">
+              <span :class="['grid h-10 w-10 place-items-center rounded-xl', conn.configured && !conn.dry_run ? 'bg-[var(--sd-primary-soft)] text-[var(--sd-primary)]' : 'bg-amber-500/12 text-amber-600']"><Smartphone class="h-5 w-5" /></span>
+              <div><p class="font-semibold">{{ conn.business_name || 'WhatsApp Business' }}</p><p class="text-[12px] text-[var(--sd-muted)]">{{ conn.phone_number || 'Number from Meta' }}</p></div>
+              <SdBadge class="ml-auto" :tone="conn.configured && !conn.dry_run ? 'green' : 'amber'" dot>{{ conn.configured ? (conn.dry_run ? 'Test mode' : 'Live') : 'Not set up' }}</SdBadge>
+            </div>
+            <dl class="grid grid-cols-2 gap-2 text-[12.5px]">
+              <div class="rounded-xl bg-[var(--sd-surface-soft)] p-3"><dt class="text-[var(--sd-muted)]">Webhook</dt><dd class="mt-0.5 font-semibold">{{ conn.webhook_ready ? 'Secured' : 'Secret missing' }}</dd></div>
+              <div class="rounded-xl bg-[var(--sd-surface-soft)] p-3"><dt class="text-[var(--sd-muted)]">Last event</dt><dd class="mt-0.5 font-semibold">{{ conn.last_webhook_at ? timeAgo(conn.last_webhook_at) : 'None yet' }}</dd></div>
+              <div class="rounded-xl bg-[var(--sd-surface-soft)] p-3"><dt class="text-[var(--sd-muted)]">Approved templates</dt><dd class="mt-0.5 font-semibold">{{ conn.approved_templates }} / {{ conn.templates_count }}</dd></div>
+              <div class="rounded-xl bg-[var(--sd-surface-soft)] p-3"><dt class="text-[var(--sd-muted)]">Graph API</dt><dd class="mt-0.5 font-semibold">{{ conn.api_version || '—' }}</dd></div>
+            </dl>
+          </div>
+          <div v-else class="sd-skeleton h-32" />
+        </div>
+      </div>
+
+      <div class="mt-4 grid gap-4" :class="data?.is_team_view ? 'xl:grid-cols-[1.2fr_1fr]' : ''">
+        <div class="sd-card overflow-hidden">
+          <div class="flex items-center justify-between border-b border-[var(--sd-border)] px-5 py-3.5"><h2 class="text-[14px] font-bold">Recent conversations</h2><NuxtLink to="/dashboard/inbox" class="sd-link text-[12.5px]">View all</NuxtLink></div>
+          <SdEmpty v-if="data && !data.recent_conversations.length" compact title="No conversations yet" text="When customers message your WhatsApp number they show up here." />
+          <NuxtLink v-for="r in data?.recent_conversations || []" :key="r.id" :to="`/dashboard/inbox?c=${r.id}`" class="flex items-center gap-3 border-b border-[var(--sd-border)] px-5 py-3 last:border-0 hover:bg-[var(--sd-surface-soft)]">
+            <SdAvatar :name="r.contact.name" :seed="r.contact.id" size="sm" />
+            <div class="min-w-0 flex-1"><p class="truncate text-[13px] font-semibold">{{ r.contact.name }}</p><p class="truncate text-[12px] text-[var(--sd-muted)]">{{ r.last_message_direction === 'out' ? 'You: ' : '' }}{{ r.last_message_preview }}</p></div>
+            <div class="hidden text-right sm:block"><SdBadge :tone="r.status === 'closed' ? 'gray' : r.status === 'pending' ? 'violet' : 'green'">{{ STATUS_LABEL[r.status] }}</SdBadge><p class="mt-1 text-[11px] text-[var(--sd-faint)]">{{ r.assigned_to?.name || 'Unassigned' }} · {{ timeAgo(r.last_message_at, true) }}</p></div>
+            <span v-if="r.unread_count" class="rounded-full bg-[var(--sd-primary)] px-1.5 text-[10.5px] font-bold leading-[18px] text-[var(--sd-on-primary)]">{{ r.unread_count }}</span>
+          </NuxtLink>
+        </div>
+        <div v-if="data?.is_team_view" class="sd-card overflow-hidden">
+          <div class="flex items-center justify-between border-b border-[var(--sd-border)] px-5 py-3.5">
+            <h2 class="text-[14px] font-bold">Team today</h2>
+            <span class="text-[12px] text-[var(--sd-muted)]">{{ data.team.online }} online · {{ data.team.available }} available</span>
+          </div>
+          <div class="sd-scroll max-h-[420px]">
+            <div v-for="t in team" :key="t.id" class="flex items-center gap-3 border-b border-[var(--sd-border)] px-5 py-3 last:border-0">
+              <SdAvatar :name="t.name" :src="t.avatar" :seed="t.id" size="sm" :online="t.is_online" />
+              <div class="min-w-0 flex-1"><p class="truncate text-[13px] font-semibold">{{ t.name }}</p><p class="text-[11.5px] text-[var(--sd-muted)]">{{ ROLE_LABEL[t.role] }} · {{ t.is_online ? (t.is_available ? 'Available' : 'Away') : 'Offline' }}</p></div>
+              <div class="grid grid-cols-3 gap-4 text-center text-[11px] text-[var(--sd-muted)]">
+                <div><p class="text-[14px] font-bold text-[var(--sd-text)]">{{ t.open_conversations }}</p>open</div>
+                <div><p class="text-[14px] font-bold text-[var(--sd-text)]">{{ t.resolved }}</p>resolved</div>
+                <div><p class="text-[14px] font-bold text-[var(--sd-text)]">{{ duration(t.avg_response_seconds) }}</p>reply</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div></div>
 </template>
+
 <script setup lang="ts">
-import {LayoutDashboard,MessagesSquare,Users,Clock,CalendarClock} from '@lucide/vue'
-definePageMeta({layout:'dashboard'});useHead({title:'Dashboard — SumashDesk'})
-const stats=[{label:'Total conversations',value:'1,284',change:'+12.8%',icon:MessagesSquare},{label:'Open conversations',value:'86',change:'12 need reply',icon:LayoutDashboard},{label:'Pending conversations',value:'24',change:'8 overdue',icon:Clock},{label:'Resolved conversations',value:'1,106',change:'86.1% resolved',icon:MessagesSquare},{label:'Total contacts',value:'2,486',change:'+184 this month',icon:Users},{label:'Messages today',value:'648',change:'402 incoming',icon:MessagesSquare},{label:'Unreplied conversations',value:'12',change:'Needs attention',icon:Clock},{label:'Overdue follow-ups',value:'3',change:'Review today',icon:CalendarClock}]
-const bars=[38,54,45,76,62,91,72];const team=[{name:'Sadikul Islam',initials:'SI',role:'Admin',status:'Online',color:'bg-blue-100 text-blue-700'},{name:'Nusrat Jahan',initials:'NJ',role:'Manager',status:'Online',color:'bg-violet-100 text-violet-700'},{name:'Mahmud Hasan',initials:'MH',role:'Agent',status:'Busy',color:'bg-amber-100 text-amber-700'},{name:'Rafi Ahmed',initials:'RA',role:'Agent',status:'Offline',color:'bg-emerald-100 text-emerald-700'}];const recent=[{name:'Sumon Kundu',initials:'SK',message:'Can you share the latest price?',time:'2m',color:'bg-amber-100 text-amber-700'},{name:'Shalvi Hasan',initials:'SH',message:'Please confirm the delivery date',time:'3m',color:'bg-sky-100 text-sky-700'},{name:'Mahbub Rahman',initials:'MR',message:'Thank you for the information.',time:'12m',color:'bg-violet-100 text-violet-700'}];const reminders=[{name:'Call Sumon Kundu',note:'Follow up about Apple Duo availability',when:'Today · 3 PM'},{name:'Reply to Diba Akter',note:'Check delivery update',when:'Overdue · 30m'},{name:'Contact Shalvi Hasan',note:'Confirm delivery schedule',when:'Tomorrow · 10 AM'}]
+import { CalendarClock, CheckCircle2, HeartHandshake, Hourglass, Inbox, MessageSquareText, MessagesSquare, RefreshCw, Smartphone, Timer, TriangleAlert, UserRound } from '@lucide/vue'
+definePageMeta({ layout: 'dashboard', capability: 'dashboard.view' })
+useHead({ title: 'Dashboard' })
+const api = useApi()
+const rt = useRealtime()
+const { me } = useSession()
+const data = ref<any>(null)
+const conn = ref<any>(null)
+const loading = ref(false)
+const error = ref<string | null>(null)
+const c = computed(() => data.value?.conversations || {})
+const m = computed(() => data.value?.messages_today || {})
+const trend = computed(() => data.value ? fillDays(data.value.trend_7d, 7, ['incoming', 'outgoing']) : [])
+const team = ref<any[]>([])
+const firstName = computed(() => (me.value?.name || '').split(' ')[0])
+const greeting = computed(() => { const h = new Date().getHours(); return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening' })
+
+async function load() {
+  loading.value = true
+  error.value = null
+  try {
+    const [d, w] = await Promise.all([api.get('dashboard/summary/', { silent: true }), api.get('whatsapp/connection/', { silent: true })])
+    data.value = d
+    conn.value = w
+    team.value = d.team_members || []
+  } catch (e: any) { error.value = e.message } finally { loading.value = false }
+}
+let timer: any
+rt.on((e) => {
+  if (e.type === 'agent.presence') { const t = team.value.find(x => x.id === e.agent.id); if (t) Object.assign(t, { is_online: e.agent.is_online, is_available: e.agent.is_available }) }
+  if (['message.created', 'conversation.updated'].includes(e.type)) { clearTimeout(timer); timer = setTimeout(load, 2000) }
+})
+onMounted(load)
 </script>

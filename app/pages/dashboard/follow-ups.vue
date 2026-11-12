@@ -1,26 +1,83 @@
-<template><div class="sd-page"><div class="sd-page-inner">
-<header class="sd-page-head"><div><p class="sd-eyebrow">Customer care queue</p><h1 class="sd-title">Follow-ups</h1><p class="sd-subtitle">Keep promised callbacks and pending customer actions visible to the whole team.</p></div><button class="sd-btn sd-btn-primary" @click="add">＋ Schedule follow-up</button></header>
-<div class="grid gap-3 sm:grid-cols-3"><div v-for="s in stats" :key="s.label" class="sd-card sd-stat"><p class="sd-stat-label">{{s.label}}</p><p class="sd-stat-value">{{s.value}}</p></div></div>
-<div class="sd-card mt-5 overflow-hidden"><div class="flex flex-wrap items-center justify-between gap-3 border-b p-4" style="border-color:var(--sd-border)"><div class="flex gap-1.5"><button v-for="f in ['All','Due today','Overdue','Upcoming','Completed']" :key="f" @click="filter=f" class="rounded-full px-3 py-2 text-[10px] font-semibold" :style="filter===f?'background:var(--sd-primary-soft);color:var(--sd-primary)':'background:var(--sd-surface-soft);color:var(--sd-muted)'">{{f}}</button></div><input v-model="search" class="sd-input !w-full sm:!w-64" placeholder="Search customer or owner"></div>
-<div class="divide-y" style="border-color:var(--sd-border)"><div v-for="item in filtered" :key="item.id" class="flex flex-wrap items-center gap-3 p-4"><div class="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-xs font-bold" style="background:var(--sd-primary-soft);color:var(--sd-primary)">{{item.customer.split(' ').map(x=>x[0]).slice(0,2).join('')}}</div><div class="min-w-0 flex-1"><p class="text-xs font-bold">{{item.customer}} <span class="ml-1 rounded-full px-2 py-0.5 text-[9px] font-semibold" style="background:var(--sd-surface-soft);color:var(--sd-muted)">{{item.type}}</span></p><p class="mt-1 text-xs sd-muted">{{item.note}}</p><p class="mt-1 text-[10px] sd-muted">Owner: {{item.owner}} · {{item.when}}</p></div><span class="rounded-full px-2.5 py-1 text-[10px] font-bold" :class="item.status==='Completed'?'bg-emerald-50 text-emerald-700':item.status==='Overdue'?'bg-rose-50 text-rose-700':'bg-amber-50 text-amber-700'">{{item.status}}</span><div class="flex gap-1"><button v-if="item.status!=='Completed'" @click="complete(item)" class="sd-btn sd-btn-quiet !min-h-8 !px-2.5">Complete</button><button @click="remove(item)" class="rounded-lg px-2 text-xs sd-muted hover:text-rose-600">✕</button></div></div><div v-if="!filtered.length" class="p-10 text-center text-xs sd-muted">No follow-ups found.</div></div>
-</div>
-<div v-if="modal" class="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 p-4" @click.self="modal=false"><div class="sd-card w-full max-w-md p-5"><h3 class="text-base font-bold">Schedule follow-up</h3><div class="mt-4 space-y-3"><label class="block text-xs font-semibold">Customer<input v-model="form.customer" class="sd-input mt-1.5" placeholder="Customer name"></label><label class="block text-xs font-semibold">Follow-up note<textarea v-model="form.note" class="sd-input mt-1.5 !h-20 py-2" placeholder="What needs to happen?"></textarea></label><div class="grid grid-cols-2 gap-3"><label class="text-xs font-semibold">Date<input v-model="form.date" type="date" class="sd-input mt-1.5"></label><label class="text-xs font-semibold">Time<input v-model="form.time" type="time" class="sd-input mt-1.5"></label></div><label class="block text-xs font-semibold">Owner<select v-model="form.owner" class="sd-input mt-1.5"><option>Nusrat Jahan</option><option>Mahmud Hasan</option><option>Rafi Ahmed</option><option>Sadikul Islam</option></select></label></div><div class="mt-5 flex justify-end gap-2"><button @click="modal=false" class="sd-btn sd-btn-quiet">Cancel</button><button @click="save" class="sd-btn sd-btn-primary">Save follow-up</button></div></div></div>
-<div v-if="notice" class="fixed bottom-5 right-5 z-50 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white">{{notice}}</div>
-</div></div></template>
+<template>
+  <div class="sd-page"><div class="sd-page-inner">
+    <SdPageHeader title="Follow-ups" :subtitle="can('followups.view_all') ? 'Callbacks and reminders for the whole team.' : 'Your callbacks and reminders.'">
+      <SdButton variant="primary" :icon="CalendarPlus" @click="openForm()">New follow-up</SdButton>
+    </SdPageHeader>
+
+    <div class="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <SdStat label="Open" :value="num(stats?.open)" :icon="ListTodo" :loading="!stats" />
+      <SdStat label="Due today" :value="num(stats?.due_today)" :icon="CalendarClock" tone="amber" :loading="!stats" />
+      <SdStat label="Overdue" :value="num(stats?.overdue)" :icon="AlarmClockOff" tone="red" :loading="!stats" />
+      <SdStat label="Completed" :value="num(stats?.completed)" :icon="CheckCircle2" tone="green" :loading="!stats" />
+    </div>
+
+    <div class="sd-card overflow-hidden">
+      <div class="flex flex-wrap items-center gap-2 border-b border-[var(--sd-border)] p-3">
+        <SdTabs v-model="list.filters.due" :tabs="[{ value: 'open', label: 'All open', count: stats?.open }, { value: 'today', label: 'Today', count: stats?.due_today }, { value: 'overdue', label: 'Overdue', count: stats?.overdue }, { value: 'upcoming', label: 'Upcoming' }, { value: 'completed', label: 'Done' }, { value: 'cancelled', label: 'Cancelled' }]" />
+        <div class="flex-1" />
+        <SdSearch v-model="list.filters.search" placeholder="Customer or title" class="w-full sm:w-60" />
+        <select v-if="owners.length > 1" v-model="list.filters.owner" class="sd-input !w-auto"><option value="">Everyone</option><option value="me">Mine</option><option v-for="o in owners" :key="o.id" :value="String(o.id)">{{ o.name }}</option></select>
+      </div>
+      <SdTableSkeleton v-if="list.loading.value && !list.items.value.length" />
+      <SdErrorState v-else-if="list.error.value" :message="list.error.value" @retry="list.load" />
+      <SdEmpty v-else-if="!list.items.value.length" :icon="CalendarCheck" :title="emptyTitle" text="Create follow-ups from a chat (⋯ → Add follow-up) or here." />
+      <div v-else class="divide-y divide-[var(--sd-border)]">
+        <div v-for="f in list.items.value" :key="f.id" class="flex flex-wrap items-center gap-3 px-4 py-3 hover:bg-[var(--sd-surface-soft)] sm:flex-nowrap">
+          <button :disabled="f.status !== 'open'" :class="['grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 transition', f.status === 'completed' ? 'border-[var(--sd-primary)] bg-[var(--sd-primary)] text-[var(--sd-on-primary)]' : 'border-[var(--sd-border-strong)] hover:border-[var(--sd-primary)]']" :title="f.status === 'open' ? 'Mark done' : ''" :aria-label="`Complete ${f.title}`" @click="setStatus(f, 'complete')">
+            <Check v-if="f.status === 'completed'" class="h-3.5 w-3.5" />
+          </button>
+          <div class="min-w-0 flex-1">
+            <p :class="['truncate text-[13.5px] font-semibold', f.status !== 'open' && 'line-through opacity-60']">{{ f.title || 'Follow-up' }}</p>
+            <p class="truncate text-[12px] text-[var(--sd-muted)]">
+              <NuxtLink :to="`/dashboard/customer-360?id=${f.contact}`" class="hover:underline">{{ f.contact_detail.name }}</NuxtLink> · {{ f.contact_detail.phone }} · {{ KIND[f.kind] }}<template v-if="f.note"> · {{ f.note }}</template>
+            </p>
+          </div>
+          <div class="text-right">
+            <p :class="['text-[12.5px] font-semibold', f.is_overdue ? 'text-[var(--sd-danger)]' : '']">{{ f.is_overdue ? `Overdue · ${timeAgo(f.due_at)}` : dateTime(f.due_at) }}</p>
+            <p class="text-[11.5px] text-[var(--sd-muted)]">{{ f.owner_detail?.name || 'No owner' }}</p>
+          </div>
+          <SdButton v-if="f.conversation" size="icon-sm" variant="ghost" :icon="MessagesSquare" title="Open chat" aria-label="Open chat" :to="`/dashboard/inbox?c=${f.conversation}`" />
+          <SdMenu :items="menu(f)" />
+        </div>
+      </div>
+      <SdPagination v-model:page="list.page.value" :count="list.count.value" />
+    </div>
+    <FollowupModal v-model:open="formOpen" :item="editing" :contact="editing ? editing.contact_detail : null" @saved="refresh" />
+  </div></div>
+</template>
 <script setup lang="ts">
-import {computed,ref,reactive,onMounted,watch} from 'vue'
-definePageMeta({layout:'dashboard'});useHead({title:'Follow-ups — SumashDesk'})
-type Item={id:number;customer:string;note:string;owner:string;when:string;type:string;status:string}
-const seed:Item[]=[{id:1,customer:'Shalvi Hasan',note:'Share the updated product information and check if she needs assistance.',owner:'Mahmud Hasan',when:'Today · 2:30 PM',type:'Callback',status:'Due today'},{id:2,customer:'Sumon Kundu',note:'Confirm the issue is fully resolved.',owner:'Nusrat Jahan',when:'Today · 4:00 PM',type:'Check-in',status:'Due today'},{id:3,customer:'Mahbub Rahman',note:'Follow up on unresolved support concern.',owner:'Rafi Ahmed',when:'Yesterday · 3:00 PM',type:'Support',status:'Overdue'},{id:4,customer:'Nusrat Jahan',note:'Send requested details.',owner:'Sadikul Islam',when:'Nov 06 · 11:00 AM',type:'Message',status:'Upcoming'},{id:5,customer:'Abdul Latif',note:'Customer confirmed the matter is settled.',owner:'Mahmud Hasan',when:'Nov 03 · 12:00 PM',type:'Check-in',status:'Completed'}]
-const items=ref<Item[]>(seed),filter=ref('All'),search=ref(''),modal=ref(false),notice=ref('')
-const form=reactive({customer:'',note:'',date:'2026-11-05',time:'10:00',owner:'Nusrat Jahan'})
-onMounted(()=>{try{const v=localStorage.getItem('sumashdesk-followups');if(v)items.value=JSON.parse(v)}catch{}})
-watch(items,v=>localStorage.setItem('sumashdesk-followups',JSON.stringify(v)),{deep:true})
-const filtered=computed(()=>items.value.filter(x=>(filter.value==='All'||x.status===filter.value)&&(x.customer+' '+x.owner+' '+x.note).toLowerCase().includes(search.value.toLowerCase())))
-const stats=computed(()=>[{label:'Due today',value:items.value.filter(x=>x.status==='Due today').length},{label:'Overdue',value:items.value.filter(x=>x.status==='Overdue').length},{label:'Upcoming',value:items.value.filter(x=>x.status==='Upcoming').length}])
-function notify(x:string){notice.value=x;setTimeout(()=>notice.value='',2200)}
-function add(){form.customer='';form.note='';modal.value=true}
-function save(){if(!form.customer.trim()||!form.note.trim()){notify('Customer and note are required');return}items.value.unshift({id:Date.now(),customer:form.customer,note:form.note,owner:form.owner,when:`${form.date} · ${form.time}`,type:'Callback',status:'Upcoming'});modal.value=false;notify('Follow-up scheduled locally')}
-function complete(x:Item){x.status='Completed';notify('Follow-up marked completed')}
-function remove(x:Item){if(confirm('Delete this follow-up?'))items.value=items.value.filter(i=>i.id!==x.id)}
+import { AlarmClockOff, Ban, CalendarCheck, CalendarClock, CalendarPlus, Check, CheckCircle2, ListTodo, MessagesSquare, Pencil, RotateCcw, Trash2 } from '@lucide/vue'
+import { toast } from 'vue-sonner'
+definePageMeta({ layout: 'dashboard', capability: 'followups.view' })
+useHead({ title: 'Follow-ups' })
+const api = useApi()
+const { can } = useSession()
+const { confirm } = useConfirm()
+const KIND: Record<string, string> = { callback: 'Callback', message: 'Message', check_in: 'Check-in', other: 'Other' }
+const list = useList<any>('followups/', { due: 'open', owner: '', ordering: 'due_at' })
+const stats = ref<any>(null)
+const owners = ref<any[]>([])
+const loadStats = async () => { try { stats.value = await api.get('followups/stats/', { silent: true }) } catch {} }
+onMounted(async () => { loadStats(); try { owners.value = await api.get('followups/owners/', { silent: true }) } catch {} })
+watch(() => list.filters.due, d => { list.filters.ordering = ['completed', 'cancelled'].includes(d) ? '-due_at' : 'due_at' })
+const emptyTitle = computed(() => ({ today: 'Nothing due today', overdue: 'Nothing overdue — nice!', upcoming: 'Nothing upcoming', completed: 'No completed follow-ups yet', cancelled: 'Nothing cancelled' } as any)[list.filters.due] || 'No follow-ups')
+const formOpen = ref(false)
+const editing = ref<any>(null)
+function openForm(f?: any) { editing.value = f || null; formOpen.value = true }
+function refresh() { list.load(); loadStats() }
+async function setStatus(f: any, action: 'complete' | 'cancel' | 'reopen') {
+  try { await api.post(`followups/${f.id}/${action}/`); toast.success(action === 'complete' ? 'Done ✓' : action === 'cancel' ? 'Cancelled' : 'Reopened'); refresh() } catch {}
+}
+async function remove(f: any) {
+  if (!(await confirm({ title: 'Delete this follow-up?', confirmText: 'Delete', danger: true }))) return
+  try { await api.del(`followups/${f.id}/`); refresh() } catch {}
+}
+const menu = (f: any) => [
+  { label: 'Edit', icon: Pencil, hidden: f.status !== 'open', onSelect: () => openForm(f) },
+  { label: 'Mark done', icon: Check, hidden: f.status !== 'open', onSelect: () => setStatus(f, 'complete') },
+  { label: 'Reopen', icon: RotateCcw, hidden: f.status === 'open', onSelect: () => setStatus(f, 'reopen') },
+  { label: 'Cancel', icon: Ban, hidden: f.status !== 'open', onSelect: () => setStatus(f, 'cancel') },
+  { separator: true },
+  { label: 'Delete', icon: Trash2, danger: true, onSelect: () => remove(f) },
+]
 </script>

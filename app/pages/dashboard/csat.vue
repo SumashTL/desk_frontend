@@ -1,47 +1,122 @@
 <template>
   <div class="sd-page"><div class="sd-page-inner">
-    <header class="sd-page-head"><div><p class="sd-eyebrow">Voice of customer</p><h1 class="sd-title">Customer Satisfaction</h1><p class="sd-subtitle">Measure support quality, collect feedback and identify conversations that need attention.</p></div><div class="flex flex-wrap gap-2"><select v-model="period" class="sd-input !w-auto"><option>Last 30 days</option><option>Last 7 days</option><option>This month</option><option>All time</option></select></div></header>
-    <section class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <article v-for="stat in statCards" :key="stat.label" class="sd-card sd-stat"><p class="sd-stat-label">{{stat.label}}</p><div class="flex items-end justify-between"><p class="sd-stat-value">{{stat.value}}</p><span class="mb-1 rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300">{{stat.note}}</span></div></article>
-    </section>
-    <section class="mt-5 grid gap-4 xl:grid-cols-[1.2fr_.8fr]">
-      <div class="sd-card p-5"><div class="flex flex-wrap items-start justify-between gap-2"><div><h2 class="text-sm font-bold">Rating distribution</h2><p class="mt-1 text-xs sd-muted">Submitted customer ratings · {{period}}</p></div><span class="rounded-full px-3 py-1 text-xs font-bold" style="background:var(--sd-primary-soft);color:var(--sd-primary)">CSAT {{csat}}%</span></div>
-        <div class="mt-5 space-y-3"><div v-for="n in [5,4,3,2,1]" :key="n" class="flex items-center gap-3 text-xs"><span class="w-10 font-semibold">{{n}} ★</span><div class="h-2.5 flex-1 overflow-hidden rounded-full" style="background:var(--sd-surface-soft)"><div class="h-full rounded-full" :style="{width:ratingPercent(n)+'%',background:n>=4?'#159b78':n===3?'#d5a33b':'#d66b72'}"></div></div><span class="w-12 text-right sd-muted">{{ratingCounts[n]||0}}</span></div></div>
-        <div class="mt-6 rounded-xl p-4" style="background:var(--sd-surface-soft)"><p class="text-xs font-bold">How CSAT works</p><ol class="mt-2 list-decimal space-y-1.5 pl-4 text-xs leading-5 sd-muted"><li>Agent resolves a customer conversation.</li><li>Team sends a short rating request using an approved WhatsApp template or supported survey flow.</li><li>Customer selects a star rating only. No comment or extra questions.</li><li>SumashDesk links the response to the conversation and agent for reporting.</li></ol></div>
+    <SdPageHeader title="Customer satisfaction" subtitle="Customers rate the chat on WhatsApp after it is resolved.">
+      <select v-model.number="days" class="sd-input !w-auto"><option :value="7">Last 7 days</option><option :value="30">Last 30 days</option><option :value="90">Last 90 days</option><option :value="365">Last 12 months</option></select>
+      <SdButton v-if="can('csat.configure')" :icon="Settings2" @click="settingsOpen = true">Settings</SdButton>
+    </SdPageHeader>
+
+    <div v-if="settings && !settings.enabled" class="mb-4 flex items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 p-4 text-[13px]">
+      <TriangleAlert class="h-4 w-4 text-amber-600" /><span class="flex-1">Rating requests are switched off, so no new ratings are collected.</span>
+      <SdButton v-if="can('csat.configure')" size="sm" @click="settingsOpen = true">Turn on</SdButton>
+    </div>
+
+    <details class="sd-card mb-4 p-4 text-[13px] leading-6">
+      <summary class="cursor-pointer font-semibold">How ratings work</summary>
+      <ol class="mt-2 list-decimal space-y-1 pl-5 text-[var(--sd-muted)]">
+        <li>When an agent presses <b>Resolve</b>, the customer gets a short WhatsApp message: <i>“How would you rate the help you got today?”</i> with a <b>Rate us</b> button showing ⭐ 1 to 5.</li>
+        <li>The customer taps a rating (typing a number like <b>5</b> or <b>৫</b> also counts). It is saved to the chat and to the agent who handled it.</li>
+        <li><b>CSAT score</b> = share of happy ratings (4–5 stars). <b>Low ratings</b> (2 or lower by default) show up in Notifications so a manager can follow up.</li>
+        <li>WhatsApp allows this message only within 24 hours of the customer’s last message — resolve chats soon after the conversation ends. You can also ask for a rating any time from the chat’s ⋯ menu.</li>
+      </ol>
+    </details>
+
+    <div class="mb-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <SdStat label="CSAT score" :value="summary?.csat_percent != null ? `${summary.csat_percent}%` : '—'" hint="share of happy ratings" :icon="Smile" :loading="!summary" />
+      <SdStat label="Average rating" :value="summary?.average_rating ?? '—'" :hint="`${num(summary?.responses)} ratings`" :icon="Star" tone="amber" :loading="!summary" />
+      <SdStat label="Response rate" :value="pct(summary?.response_rate)" :hint="`${num(summary?.requested)} requests sent`" :icon="Send" tone="blue" :loading="!summary" />
+      <SdStat label="Low ratings" :value="num(summary?.low_ratings)" :hint="summary ? `${summary.low_rating_threshold} or lower` : ''" :icon="Frown" tone="red" :loading="!summary" />
+    </div>
+
+    <div class="mb-4 grid gap-4 lg:grid-cols-[1fr_1.3fr]">
+      <div class="sd-card p-5">
+        <h2 class="mb-4 text-[14px] font-bold">Rating distribution</h2>
+        <div v-for="n in [5, 4, 3, 2, 1]" :key="n" class="mb-2.5 flex items-center gap-3 text-[12.5px]">
+          <span class="w-8 font-semibold">{{ n }} ★</span>
+          <div class="h-2.5 flex-1 overflow-hidden rounded-full bg-[var(--sd-surface-strong)]"><div class="h-full rounded-full" :style="{ width: `${bar(n)}%`, background: n >= 4 ? 'var(--sd-primary)' : n === 3 ? '#e0a83c' : 'var(--sd-danger)' }" /></div>
+          <span class="w-10 text-right text-[var(--sd-muted)]">{{ summary?.distribution?.[n] ?? 0 }}</span>
+        </div>
       </div>
-      <div class="sd-card p-5"><h2 class="text-sm font-bold">Survey settings</h2><p class="mt-1 text-xs sd-muted">Control when feedback requests are created in the demo.</p><div class="mt-4 space-y-4">
-        <label class="flex items-center justify-between gap-3 text-xs"><span><b>Enable customer ratings</b><small class="mt-1 block sd-muted">Turn CSAT collection on or off.</small></span><input v-model="settings.enabled" type="checkbox" class="h-4 w-4 accent-teal-700"></label>
-        <label class="flex items-center justify-between gap-3 text-xs"><span><b>Request after resolution</b><small class="mt-1 block sd-muted">Offer a survey when a conversation is resolved.</small></span><input v-model="settings.afterResolve" type="checkbox" class="h-4 w-4 accent-teal-700"></label>
-        <label class="flex items-center justify-between gap-3 text-xs"><span><b>One request per conversation</b><small class="mt-1 block sd-muted">Avoid repeated survey requests.</small></span><input v-model="settings.once" type="checkbox" class="h-4 w-4 accent-teal-700"></label>
-        <label class="block text-xs font-semibold">Rating method<select v-model="settings.mode" class="sd-input mt-2"><option value="flow5">5-point rating using star choices</option><option value="quick3">3 numbered WhatsApp reply buttons (1–3)</option></select><small class="mt-1 block font-normal sd-muted">Recommended: WhatsApp Flow with five selectable star-labelled choices. Fallback: three native reply buttons.</small></label>
-        
-        <label class="block text-xs font-semibold">Low rating alert<select v-model="settings.alert" class="sd-input mt-2"><option>1–2 stars</option><option>1–3 stars</option><option>1 star only</option></select></label>
-        <p class="rounded-lg border px-3 py-2 text-[10px] leading-4 sd-muted" style="border-color:var(--sd-border)">Demo mode: resolving a conversation queues a local survey event. Live WhatsApp sending and rating capture require the Cloud API, a published Flow/template and webhook.</p>
-        <button class="sd-btn sd-btn-primary w-full" @click="saveSettings">Save survey settings</button>
-      </div></div>
-    </section>
-    <section class="sd-card mt-4 overflow-hidden"><div class="flex flex-wrap items-center justify-between gap-3 border-b p-5" style="border-color:var(--sd-border)"><div><h2 class="text-sm font-bold">Recent feedback</h2><p class="mt-1 text-xs sd-muted">Ratings are linked to conversations and assigned agents.</p></div><input v-model="search" class="sd-input !w-full sm:!w-64" placeholder="Search customer or agent…"></div>
-      <div class="overflow-x-auto"><table class="w-full min-w-[720px] text-left text-xs"><thead style="background:var(--sd-surface-soft)"><tr><th class="px-5 py-3 font-semibold sd-muted">Customer</th><th class="px-4 py-3 font-semibold sd-muted">Rating</th><th class="px-4 py-3 font-semibold sd-muted">Agent</th><th class="px-4 py-3 font-semibold sd-muted">Date</th><th class="px-4 py-3 font-semibold sd-muted">Action</th></tr></thead><tbody><tr v-for="row in filtered" :key="row.id" class="border-t" style="border-color:var(--sd-border)"><td class="px-5 py-4 font-semibold">{{row.customer}}</td><td class="px-4 py-4"><span class="font-bold text-amber-500">{{'★'.repeat(row.rating)}}<span class="sd-muted">{{'☆'.repeat(5-row.rating)}}</span></span></td><td class="px-4 py-4">{{row.agent}}</td><td class="px-4 py-4 sd-muted">{{row.date}}</td><td class="px-4 py-4"><button class="font-semibold" style="color:var(--sd-primary)" @click="markReviewed(row)"> {{row.reviewed?'Reviewed':'Mark reviewed'}} </button></td></tr><tr v-if="!filtered.length"><td colspan="5" class="p-8 text-center sd-muted">No feedback matches your search.</td></tr></tbody></table></div>
-      <div class="border-t px-5 py-3 text-[10px] sd-muted" style="border-color:var(--sd-border)">Demo feedback data · Saved locally in this browser</div>
-    </section>
-    <div v-if="notice" class="fixed bottom-5 right-5 z-50 rounded-xl bg-slate-900 px-4 py-3 text-xs font-semibold text-white shadow-xl">{{notice}}</div>
+      <div class="sd-card overflow-hidden">
+        <div class="border-b border-[var(--sd-border)] px-5 py-3.5"><h2 class="text-[14px] font-bold">{{ can('reports.team') ? 'By agent' : 'Your ratings' }}</h2></div>
+        <SdEmpty v-if="!agents.length" compact title="No ratings in this period" />
+        <table v-else class="sd-table"><thead><tr><th>Agent</th><th class="text-right">Ratings</th><th class="text-right">Average</th><th class="text-right">CSAT</th></tr></thead>
+          <tbody><tr v-for="a in agents" :key="a.agent.id"><td class="font-semibold">{{ a.agent.name }}</td><td class="text-right">{{ a.responses }}</td><td class="text-right">{{ a.average_rating }}</td><td class="text-right font-semibold">{{ pct(a.csat_percent) }}</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <div class="sd-card overflow-hidden">
+      <div class="flex flex-wrap items-center gap-2 border-b border-[var(--sd-border)] p-3">
+        <h2 class="mr-2 text-[14px] font-bold">Ratings</h2>
+        <SdSearch v-model="list.filters.search" placeholder="Customer name or number" class="w-full sm:w-60" />
+        <select v-model="list.filters.status" class="sd-input !w-auto"><option value="">Any status</option><option value="answered">Answered</option><option value="sent">Waiting for answer</option><option value="pending">Scheduled</option><option value="failed">Failed</option></select>
+        <button :class="['sd-chip', list.filters.low === 'true' && 'is-active']" @click="list.filters.low = list.filters.low === 'true' ? '' : 'true'"><Frown class="h-3.5 w-3.5" />Low only</button>
+      </div>
+      <SdTableSkeleton v-if="list.loading.value && !list.items.value.length" />
+      <SdEmpty v-else-if="!list.items.value.length" :icon="HeartHandshake" title="No ratings yet" text="When a chat is resolved, the customer gets a rating request on WhatsApp (if enabled)." />
+      <div v-else class="overflow-x-auto">
+        <table class="sd-table min-w-[720px]"><thead><tr><th>Customer</th><th>Rating</th><th>Agent</th><th>Status</th><th>When</th><th /></tr></thead>
+          <tbody>
+            <tr v-for="s in list.items.value" :key="s.id">
+              <td><p class="font-semibold">{{ s.contact.name }}</p><p class="text-[12px] text-[var(--sd-muted)]">{{ s.contact.phone }}</p></td>
+              <td><span v-if="s.rating" :class="['font-semibold', s.rating >= (s.max_rating === 5 ? 4 : 3) ? 'text-[var(--sd-primary)]' : s.rating <= (settings?.low_rating_threshold ?? 2) ? 'text-[var(--sd-danger)]' : 'text-amber-600']">{{ s.rating }} / {{ s.max_rating }}</span><span v-else class="text-[var(--sd-faint)]">—</span></td>
+              <td>{{ s.agent?.name || '—' }}</td>
+              <td><SdBadge :tone="({ answered: 'green', sent: 'blue', pending: 'gray', failed: 'red', expired: 'gray' } as any)[s.status]">{{ s.status }}</SdBadge><p v-if="s.failure_reason" class="mt-0.5 max-w-[220px] truncate text-[11px] text-[var(--sd-danger)]" :title="s.failure_reason">{{ s.failure_reason }}</p></td>
+              <td class="text-[12px] text-[var(--sd-muted)]">{{ timeAgo(s.answered_at || s.requested_at || s.created_at) }}</td>
+              <td><SdButton size="xs" variant="ghost" :to="`/dashboard/inbox?c=${s.conversation_id}`">Open chat</SdButton></td>
+            </tr>
+          </tbody></table>
+      </div>
+      <SdPagination v-model:page="list.page.value" :count="list.count.value" />
+    </div>
+
+    <SdModal v-model:open="settingsOpen" title="Rating settings" description="How and when customers are asked to rate a resolved chat." size="lg">
+      <form v-if="form" id="csat-form" class="space-y-4" @submit.prevent="saveSettings">
+        <SdToggle v-model="form.enabled" label="Ask customers for a rating" />
+        <SdToggle v-model="form.request_on_resolve" label="Send automatically when a chat is resolved" description="Off = only when an agent asks from the chat menu." />
+        <SdToggle v-model="form.once_per_conversation" label="At most once per conversation" />
+        <div class="grid gap-3 sm:grid-cols-2">
+          <SdField label="Rating style" :error="errors.mode" class="sm:col-span-2">
+            <select v-model="form.mode" class="sd-input"><option value="list5">5-star list (recommended — works without any setup)</option><option value="quick3">3 buttons: 1 · 2 · 3</option><option value="flow5">WhatsApp Flow 1–5 (needs a Flow made in Meta)</option></select>
+          </SdField>
+          <SdField label="Send after (minutes)" :error="errors.delay_minutes" hint="0 = right away"><input v-model.number="form.delay_minutes" type="number" min="0" max="1440" class="sd-input"></SdField>
+          <SdField v-if="form.mode === 'flow5'" label="Flow ID" :error="errors.flow_id" hint="Published WhatsApp Flow with a rating question"><input v-model="form.flow_id" class="sd-input"></SdField>
+          <SdField v-if="form.mode === 'flow5'" label="Template (outside 24h)" :error="errors.template_name" hint="Approved template used when the window is closed"><input v-model="form.template_name" class="sd-input"></SdField>
+          <SdField v-if="form.mode === 'flow5'" label="Template language" :error="errors.template_language"><input v-model="form.template_language" class="sd-input" placeholder="en"></SdField>
+          <SdField label="Low rating is" :error="errors.low_rating_threshold" hint="Ratings at or below this are flagged"><select v-model.number="form.low_rating_threshold" class="sd-input"><option v-for="n in 4" :key="n" :value="n">{{ n }} or lower</option></select></SdField>
+        </div>
+      </form>
+      <template #footer><SdButton @click="settingsOpen = false">Cancel</SdButton><SdButton type="submit" form="csat-form" variant="primary" :loading="saving">Save</SdButton></template>
+    </SdModal>
   </div></div>
 </template>
 <script setup lang="ts">
-import {computed,ref,onMounted,watch} from 'vue'
-definePageMeta({layout:'dashboard'});useHead({title:'Customer Satisfaction — SumashDesk'})
-type Feedback={id:number;customer:string;rating:number;agent:string;date:string;reviewed:boolean}
-const seed:Feedback[]=[{id:1,customer:'Sumon Kundu',rating:5,agent:'Nusrat Jahan',date:'Today, 11:42 AM',reviewed:true},{id:2,customer:'Shalvi Hasan',rating:4,agent:'Mahmud Hasan',date:'Today, 10:18 AM',reviewed:false},{id:3,customer:'Mahbub Rahman',rating:2,agent:'Rafi Ahmed',date:'Yesterday',reviewed:false},{id:4,customer:'Nusrat Jahan',rating:5,agent:'Nusrat Jahan',date:'Nov 02, 2026',reviewed:true},{id:5,customer:'Abdul Latif',rating:3,agent:'Mahmud Hasan',date:'Nov 01, 2026',reviewed:false}]
-const feedback=ref<Feedback[]>(seed.map(x=>({...x}))),period=ref('Last 30 days'),search=ref(''),notice=ref('')
-const settings=ref({enabled:true,afterResolve:true,once:true,mode:'flow5',alert:'1–2 stars'})
-onMounted(()=>{try{const f=localStorage.getItem('sumashdesk-csat');if(f)feedback.value=JSON.parse(f);const s=localStorage.getItem('sumashdesk-csat-settings');if(s)settings.value={...settings.value,...JSON.parse(s)}}catch{}})
-watch(feedback,v=>localStorage.setItem('sumashdesk-csat',JSON.stringify(v)),{deep:true})
-const ratingCounts=computed(()=>Object.fromEntries([1,2,3,4,5].map(n=>[n,feedback.value.filter(x=>x.rating===n).length])))
-const csat=computed(()=>feedback.value.length?Math.round(feedback.value.filter(x=>x.rating>=4).length/feedback.value.length*100):0)
-const statCards=computed(()=>[{label:'Customer satisfaction',value:csat.value+'%',note:'4–5 star ratings'},{label:'Responses received',value:String(feedback.value.length),note:'Demo responses'},{label:'Average rating',value:(feedback.value.reduce((a,x)=>a+x.rating,0)/Math.max(feedback.value.length,1)).toFixed(1)+'/5',note:'Across responses'},{label:'Needs review',value:String(feedback.value.filter(x=>x.rating<=2&&!x.reviewed).length),note:'Low rating alerts'}])
-const filtered=computed(()=>feedback.value.filter(x=>(x.customer+' '+x.agent).toLowerCase().includes(search.value.toLowerCase())))
-function ratingPercent(n:number){return feedback.value.length?ratingCounts.value[n]/feedback.value.length*100:0}
-function notify(s:string){notice.value=s;setTimeout(()=>notice.value='',2400)}
-function saveSettings(){localStorage.setItem('sumashdesk-csat-settings',JSON.stringify(settings.value));notify('Survey settings saved')}
-function markReviewed(row:Feedback){row.reviewed=true;notify('Feedback marked as reviewed')}
+import { Frown, HeartHandshake, Send, Settings2, Smile, Star, TriangleAlert } from '@lucide/vue'
+import { toast } from 'vue-sonner'
+definePageMeta({ layout: 'dashboard', capability: 'csat.view' })
+useHead({ title: 'Customer satisfaction' })
+const api = useApi()
+const { can } = useSession()
+const days = ref(30)
+const summary = ref<any>(null)
+const agents = ref<any[]>([])
+const settings = ref<any>(null)
+const list = useList<any>('csat/surveys/', { status: '', low: '', days: 30 })
+async function load() {
+  list.filters.days = days.value
+  const [s, a] = await Promise.allSettled([api.get('csat/surveys/summary/', { query: { days: days.value }, silent: true }), api.get('csat/surveys/agents/', { query: { days: days.value }, silent: true })])
+  if (s.status === 'fulfilled') summary.value = s.value
+  if (a.status === 'fulfilled') agents.value = a.value
+}
+watch(days, load)
+onMounted(async () => { load(); try { settings.value = await api.get('csat/settings/', { silent: true }) } catch {} })
+const bar = (n: number) => { const t = summary.value?.responses || 0; return t ? Math.round((summary.value.distribution?.[n] || 0) * 100 / t) : 0 }
+const settingsOpen = ref(false)
+const form = ref<any>(null)
+const saving = ref(false)
+const errors = reactive<Record<string, string>>({})
+watch(settingsOpen, o => { if (o && settings.value) { form.value = { ...settings.value }; Object.keys(errors).forEach(k => delete errors[k]) } })
+async function saveSettings() {
+  saving.value = true
+  try { settings.value = await api.patch('csat/settings/', form.value, { silent: true }); toast.success('Rating settings saved'); settingsOpen.value = false } catch (e: any) { Object.assign(errors, e.fields); if (!Object.keys(e.fields).length) toast.error(e.message) } finally { saving.value = false }
+}
 </script>

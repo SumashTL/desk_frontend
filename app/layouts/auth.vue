@@ -1,34 +1,27 @@
 <template>
-  <div
-    class="min-h-screen flex p-4 sm:p-5 gap-6 relative overflow-hidden bg-[#F5F7FA]"
-    style="background-image: radial-gradient(circle at 82% 14%, #FDF8EE 0%, transparent 38%);"
-  >
-    <!-- Left Banner (Shared between Login & Forgot Password) -->
-    <div
-      class="hidden lg:flex lg:w-[48%] xl:w-[50%] rounded-[32px] shadow-[0_12px_32px_-8px_rgba(0,0,0,0.055),0_2px_10px_-3px_rgba(0,0,0,0.025)] items-center justify-center relative overflow-hidden p-10"
-      style="background: radial-gradient(circle at 12% 15%, #FEF7EA 0%, transparent 52%), radial-gradient(circle at 88% 20%, #EAF7E8 0%, transparent 54%), radial-gradient(circle at 80% 88%, #EBF8E9 0%, transparent 54%), linear-gradient(135deg, #F9FCF9 0%, #EFF8EE 100%);"
-    >
-      <div class="relative z-10 flex flex-col items-center justify-center">
-        <img
-          src="/login-img.webp"
-          alt="SumashDesk"
-          class="w-full max-w-[330px] xl:max-w-[370px] object-contain pointer-events-none select-none drop-shadow-[0_28px_26px_rgba(0,0,0,0.12)]"
-        />
-      </div>
-    </div>
-
-    <!-- Right Side (Dynamic Auth Form Slot) -->
-    <div class="flex-1 flex flex-col justify-between py-2 px-2 sm:px-6 relative z-10">
-      <div></div>
-
-      <slot />
-
-      <footer class="w-full flex flex-col sm:flex-row items-center justify-between text-[11px] text-zinc-400 pt-4 gap-2">
-        <div>
-          Copyright © 2026, All Rights Reserved By <span class="font-bold text-primary-green">SumashDesk</span>
+  <div class="relative flex min-h-[100dvh] gap-6 overflow-hidden bg-[var(--sd-bg)] p-3 text-[var(--sd-text)] sm:p-5">
+    <aside class="relative hidden overflow-hidden rounded-[28px] lg:flex lg:w-[46%] xl:w-[48%]">
+      <div class="absolute inset-0 bg-gradient-to-br from-[#0f7a43] via-[#0d6a3b] to-[#0a4f2d]" />
+      <div class="absolute inset-0 opacity-[.13]" style="background-image: radial-gradient(#fff 1px, transparent 1px); background-size: 22px 22px" />
+      <div class="relative z-10 flex w-full flex-col justify-between p-10 text-white">
+        <div class="flex items-center gap-3"><AppLogo class="h-10 w-10 !bg-white/15 !from-transparent !to-transparent" /><span class="text-lg font-extrabold">SumashDesk</span></div>
+        <div class="max-w-md">
+          <h2 class="text-[34px] font-extrabold leading-[1.1] tracking-tight">One WhatsApp number.<br>Your whole team.</h2>
+          <p class="mt-4 text-[14.5px] leading-6 text-white/80">Every customer chat in one shared inbox — assigned, tracked and answered in real time by the right person.</p>
+          <ul class="mt-8 space-y-3 text-[13.5px] text-white/90">
+            <li v-for="f in features" :key="f" class="flex items-center gap-3"><span class="grid h-6 w-6 place-items-center rounded-full bg-white/15"><Check class="h-3.5 w-3.5" /></span>{{ f }}</li>
+          </ul>
         </div>
-      </footer>
+        <p class="text-[11.5px] text-white/60">© {{ new Date().getFullYear() }} Sumash Tech · Official WhatsApp Business Platform</p>
+      </div>
+    </aside>
+    <div class="relative z-10 flex flex-1 flex-col">
+      <div class="flex items-center gap-2 px-2 pt-2 lg:hidden"><AppLogo class="h-8 w-8" /><span class="font-extrabold">SumashDesk</span></div>
+      <div class="flex flex-1 items-center justify-center px-2 py-8"><slot /></div>
     </div>
   </div>
 </template>
-
+<script setup lang="ts">
+import { Check } from '@lucide/vue'
+const features = ['Live team inbox with assignment', '24-hour window & approved templates', 'Broadcasts, follow-ups and CSAT', 'Admin, Manager and Agent roles']
+</script>
