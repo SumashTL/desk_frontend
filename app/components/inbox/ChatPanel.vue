@@ -25,6 +25,7 @@
               <ChevronDown :class="['h-3.5 w-3.5 opacity-60', showInfo ? 'hidden 2xl:block' : 'hidden lg:block']" />
             </SdButton>
           </SdMenu>
+          <SdButton size="icon-sm" :icon="MessageSquareDot" title="Mark as unread" aria-label="Mark as unread" :loading="busy === 'unread'" @click="markUnread" />
           <SdButton v-if="conv.permissions?.update && conv.status === 'open'" size="sm" :icon="Clock4" title="Mark as pending (waiting on the customer or on us)" aria-label="Mark as pending" :loading="busy === 'status-pending'" @click="setStatus('pending')"><span :class="showInfo ? 'hidden 2xl:inline' : 'hidden xl:inline'">Pending</span></SdButton>
           <SdButton v-else-if="conv.permissions?.update && conv.status === 'pending'" size="sm" variant="soft" :icon="Clock4" title="Pending — click to move back to open" aria-label="Move back to open" :loading="busy === 'status-open'" @click="setStatus('open')"><span :class="showInfo ? 'hidden 2xl:inline' : 'hidden xl:inline'">Pending</span></SdButton>
           <SdButton v-if="conv.permissions?.update && conv.status !== 'closed'" size="sm" variant="primary" :icon="CheckCircle2" title="Resolve chat" aria-label="Resolve chat" :loading="busy === 'status-closed'" @click="setStatus('closed')"><span :class="showInfo ? 'hidden 2xl:inline' : 'hidden xl:inline'">Resolve</span></SdButton>
@@ -93,7 +94,7 @@
 <script setup lang="ts">
 import {
   AlarmClock, ArrowDown, ArrowLeft, CheckCircle2, ChevronDown, Copy, Flag, HeartHandshake, MessageCircle, PanelRight, RotateCcw,
-  Star, StickyNote, UserMinus, UserRound, UserRoundCheck, UserRoundPlus, CalendarPlus, Contact, Clock4, Lock,
+  Star, StickyNote, UserMinus, UserRound, UserRoundCheck, UserRoundPlus, CalendarPlus, Contact, Clock4, Lock, MessageSquareDot,
 } from '@lucide/vue'
 import { toast } from 'vue-sonner'
 
@@ -228,6 +229,17 @@ function markRead() {
     if (!conv.value?.unread_count || document.visibilityState !== 'visible') return
     try { const d = await api.post(`inbox/conversations/${props.id}/read/`, {}, { silent: true }); conv.value = d; emit('updated', d) } catch {}
   }, 300)
+}
+
+// Like WhatsApp: the chat shows as unread again and closes, so nobody forgets to come back to it.
+async function markUnread() {
+  clearTimeout(readTimer)
+  busy.value = 'unread'
+  try {
+    const d = await api.post(`inbox/conversations/${props.id}/unread/`, {})
+    emit('updated', d)
+    emit('back')
+  } catch {} finally { busy.value = null }
 }
 
 // ---------- scrolling ----------
