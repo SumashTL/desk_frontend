@@ -24,9 +24,13 @@
             </div>
             <p v-if="att.download_status === 'failed' && att.error" class="mt-1 break-words text-[11px] text-[var(--sd-faint)]">{{ att.error }}</p>
           </div>
-          <a v-else-if="m.type === 'image' || m.type === 'sticker'" :href="att.url" target="_blank" rel="noopener" class="-mx-1 mb-1 block overflow-hidden rounded-xl">
-            <img :src="att.url" :alt="m.body || 'Image'" :class="['max-h-[320px] w-auto max-w-full object-cover', m.type === 'sticker' && 'max-h-[140px] bg-transparent']" loading="lazy">
-          </a>
+          <button v-else-if="m.type === 'image' || m.type === 'sticker'" type="button" class="-mx-1 mb-1 block cursor-zoom-in overflow-hidden rounded-xl" :title="`Open ${typeLabel.toLowerCase()}`" @click="viewing = true">
+            <span v-if="imgFailed" class="flex h-[160px] w-[220px] max-w-full flex-col items-center justify-center gap-1.5 rounded-xl bg-black/[.05] text-[12px] text-[var(--sd-muted)] dark:bg-white/[.06]">
+              <template v-if="imgGaveUp"><FileWarning class="h-5 w-5" />Image not available</template>
+              <template v-else><Loader2 class="h-5 w-5 animate-spin" />Loading image…</template>
+            </span>
+            <img v-else :key="imgSrc" :src="imgSrc" :alt="m.body || 'Image'" :class="['max-h-[320px] w-auto max-w-full object-cover', m.type === 'sticker' && 'max-h-[140px] bg-transparent']" loading="lazy" @error="onImgError">
+          </button>
           <video v-else-if="m.type === 'video'" :src="att.url" controls preload="metadata" class="-mx-1 mb-1 max-h-[320px] max-w-full rounded-xl" />
           <audio v-else-if="m.type === 'audio'" :src="att.url" controls preload="metadata" class="mb-1 w-[260px] max-w-full" />
           <a v-else :href="att.url" target="_blank" rel="noopener" class="mb-1 flex items-center gap-3 rounded-xl bg-black/[.04] px-3 py-2.5 hover:bg-black/[.07] dark:bg-white/[.06]">
@@ -72,6 +76,7 @@
         <button v-for="e in EMOJIS" :key="e" type="button" :class="['rounded-full px-1.5 py-0.5 text-[18px] leading-none transition hover:scale-125 hover:bg-[var(--sd-surface-strong)]', myReaction === e && 'bg-[var(--sd-primary-soft)]']" @click="pick(e)">{{ e }}</button>
       </div>
     </div>
+    <InboxImageViewer v-if="att && (m.type === 'image' || m.type === 'sticker')" :src="viewing ? imgSrc : null" :caption="m.body" :name="att.file_name" @close="viewing = false" />
   </div>
 </template>
 <script setup lang="ts">
@@ -94,6 +99,28 @@ function retry() {
 }
 const out = computed(() => props.m.direction === 'out')
 const att = computed(() => props.m.attachment && { ...props.m.attachment, url: assetUrl(props.m.attachment.url) })
+
+// Photos: open in a popup on this page. If a photo fails to load (e.g. its file was just replaced by a
+// smaller copy), try again a few times instead of showing a broken image; a realtime update usually
+// brings the new address first.
+const viewing = ref(false)
+const imgFailed = ref(false)
+const imgTry = ref(0)
+let imgTimer: any
+const imgSrc = computed(() => {
+  const url = att.value?.url
+  if (!url || !imgTry.value) return url
+  return `${url}${url.includes('?') ? '&' : '?'}r=${imgTry.value}`
+})
+watch(() => att.value?.url, () => { imgTry.value = 0; imgFailed.value = false; imgGaveUp.value = false; clearTimeout(imgTimer) })
+const imgGaveUp = ref(false)
+function onImgError() {
+  imgFailed.value = true
+  if (imgTry.value >= 4) { imgGaveUp.value = true; return }
+  clearTimeout(imgTimer)
+  imgTimer = setTimeout(() => { imgTry.value += 1; imgFailed.value = false }, 1500 * (imgTry.value + 1))
+}
+onBeforeUnmount(() => clearTimeout(imgTimer))
 const typeLabel = computed(() => ({ image: 'Image', video: 'Video', audio: 'Voice note', document: 'Document', sticker: 'Sticker' } as any)[props.m.type] || 'File')
 const automatedLabel = computed(() => ({ greeting: 'Auto greeting', away: 'Away message', csat: 'Rating request' } as any)[props.m.extra?.automated] || 'Automated')
 </script>
