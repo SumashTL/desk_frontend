@@ -24,7 +24,19 @@
       </span>
       <span v-if="number" :class="['block truncate text-[11.5px] tabular-nums', unread ? 'text-[var(--sd-muted)]' : 'text-[var(--sd-faint)]']">{{ number }}</span>
       <span class="mt-0.5 flex items-center gap-1.5">
-        <CheckCheck v-if="c.last_message_direction === 'out'" class="h-3.5 w-3.5 shrink-0 text-[var(--sd-faint)]" />
+        <!-- who wrote last: the customer (green arrow) or us (WhatsApp ticks + who sent it) -->
+        <template v-if="!typing && c.last_message_preview">
+          <span v-if="lastOut" class="inline-flex shrink-0 items-center gap-1" :title="lastTitle">
+            <Clock3 v-if="lastStatus === 'pending'" class="h-3 w-3 text-[var(--sd-faint)]" />
+            <Check v-else-if="lastStatus === 'sent'" class="h-3.5 w-3.5 text-[var(--sd-faint)]" />
+            <CheckCheck v-else-if="lastStatus === 'delivered'" class="h-3.5 w-3.5 text-[var(--sd-faint)]" />
+            <CheckCheck v-else-if="lastStatus === 'read'" class="h-3.5 w-3.5 text-sky-500" />
+            <AlertCircle v-else-if="lastStatus === 'failed'" class="h-3.5 w-3.5 text-[var(--sd-danger)]" />
+            <CheckCheck v-else class="h-3.5 w-3.5 text-[var(--sd-faint)]" />
+            <span class="text-[12px] font-semibold text-[var(--sd-muted)]">{{ lastBy }}:</span>
+          </span>
+          <span v-else class="inline-flex shrink-0" title="Customer wrote last"><ArrowDownLeft class="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" aria-label="Customer wrote last" /></span>
+        </template>
         <span :class="['truncate text-[12.5px]', typing ? 'italic text-[var(--sd-primary)]' : unread ? 'font-medium text-[var(--sd-text)]' : 'text-[var(--sd-faint)]']">{{ typing ? `${typing} is typing…` : (c.last_message_preview || 'No messages yet') }}</span>
         <span v-if="unread" class="ml-auto shrink-0 rounded-full bg-[var(--sd-primary)] px-1.5 text-[10.5px] font-bold leading-[18px] text-[var(--sd-on-primary)]">{{ c.unread_count }}</span>
       </span>
@@ -45,10 +57,20 @@
   </button>
 </template>
 <script setup lang="ts">
-import { AlarmClock, CheckCheck, Clock3, Lock, Star, UserRound } from '@lucide/vue'
+import { AlarmClock, AlertCircle, ArrowDownLeft, Check, CheckCheck, Clock3, Lock, Star, UserRound } from '@lucide/vue'
 const props = defineProps<{ c: any, active?: boolean, myId?: number, typing?: string | null, now?: number }>()
 defineEmits<{ select: [string] }>()
 const unread = computed(() => props.c.unread_count > 0)
+// last message: ours (status + sender) or the customer's
+const lastOut = computed(() => props.c.last_message_direction === 'out')
+const lastStatus = computed(() => props.c.last_message?.status || '')
+const lastBy = computed(() => {
+  const by = props.c.last_message?.sent_by
+  if (!by) return props.c.last_message ? 'Auto' : 'You'
+  return by.id === props.myId ? 'You' : (by.name || '').split(' ')[0]
+})
+const STATUS_TEXT: Record<string, string> = { pending: 'Sending', sent: 'Sent', delivered: 'Delivered', read: 'Seen', failed: 'Not delivered' }
+const lastTitle = computed(() => `We replied last${props.c.last_message?.sent_by ? ` (${props.c.last_message.sent_by.name})` : ''} · ${STATUS_TEXT[lastStatus.value] || 'Sent'}`)
 // Number under the name: only when the name is a real name (otherwise the name already is the number)
 const number = computed(() => {
   const ct = props.c.contact

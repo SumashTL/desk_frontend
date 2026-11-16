@@ -47,7 +47,8 @@
         <p v-if="m.type === 'interactive' || m.type === 'button'" class="mb-1 inline-flex items-center gap-1 rounded bg-black/[.05] px-1.5 text-[10.5px] font-semibold uppercase tracking-wide text-[var(--sd-muted)] dark:bg-white/[.07]"><MousePointerClick class="h-3 w-3" />Tapped</p>
         <p v-if="m.type === 'unsupported'" class="italic text-[var(--sd-muted)]">This message type isn't supported by WhatsApp's API.</p>
 
-        <p v-if="m.body && m.type !== 'location'" class="whitespace-pre-wrap break-words">{{ m.body }}</p>
+        <InboxLinkPreview v-if="previewUrl" :url="previewUrl" />
+        <p v-if="m.body && m.type !== 'location'" class="whitespace-pre-wrap break-words"><template v-for="(part, i) in bodyParts" :key="i"><a v-if="part.href" :href="part.href" target="_blank" rel="noopener noreferrer nofollow" class="break-all font-medium text-sky-700 underline decoration-1 underline-offset-2 hover:opacity-80 dark:text-sky-300">{{ part.text }}</a><template v-else>{{ part.text }}</template></template></p>
 
         <div class="mt-0.5 flex items-center justify-end gap-1 text-[10.5px] text-[var(--sd-faint)]">
           <span>{{ clock(m.sent_at) }}</span>
@@ -99,6 +100,9 @@ function retry() {
 }
 const out = computed(() => props.m.direction === 'out')
 const att = computed(() => props.m.attachment && { ...props.m.attachment, url: assetUrl(props.m.attachment.url) })
+// links in the text are clickable; the first one in a text message gets a preview card
+const bodyParts = computed(() => linkParts(props.m.body || ''))
+const previewUrl = computed(() => props.m.type === 'text' ? bodyParts.value.find(p => p.href)?.href : undefined)
 
 // Photos: open in a popup on this page. If a photo fails to load (e.g. its file was just replaced by a
 // smaller copy), try again a few times instead of showing a broken image; a realtime update usually

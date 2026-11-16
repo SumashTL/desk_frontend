@@ -183,6 +183,14 @@ rt.on((e) => {
       upsert(e.conversation)
       softRefresh()
       break
+    case 'message.updated': {
+      // sent → delivered → seen: update the ticks on the chat's row
+      const row = items.value.find(c => c.id === e.conversation_id)
+      if (row?.last_message && row.last_message.id === e.message?.id && row.last_message.status !== e.message.status) {
+        row.last_message = { ...row.last_message, status: e.message.status }
+      }
+      break
+    }
     case 'conversation.removed':
       items.value = items.value.filter(c => c.id !== e.conversation_id)
       softRefresh()
